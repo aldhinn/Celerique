@@ -9,7 +9,6 @@ License: Mozilla Public License 2.0. (See ./LICENSE).
 */
 
 #include <celerique.h>
-#include <stdlib.h>
 
 #include <stdarg.h>
 #include <setjmp.h>
