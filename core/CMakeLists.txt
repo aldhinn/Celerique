@@ -17,6 +17,59 @@ if (NOT TARGET CeleriqueEngineCore)
         ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp
     )
 
+    # Core library.
+    add_library(
+        CeleriqueEngineCore STATIC
+        ${CeleriqueEngineCoreSrc}
+    )
+    target_include_directories(
+        CeleriqueEngineCore PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/include
+    )
+
+    option(
+        BuildCeleriqueEngineCoreUnitTestingCpp
+        "The Switch that enables building the C++ unit testing for the core module."
+        OFF
+    )
+    if (BuildCeleriqueEngineCoreUnitTestingCpp OR PROJECT_IS_TOP_LEVEL)
+        enable_testing()
+        find_package(GTest QUIET)
+
+        if (NOT GTest_FOUND)
+            FetchContent_Declare(
+                googletest
+                GIT_REPOSITORY      https://github.com/google/googletest.git
+                GIT_TAG             v1.14.0
+            )
+            FetchContent_MakeAvailable(googletest)
+        endif()
+
+        # Core Unit Testing CMake Target configurations.
+        file(GLOB_RECURSE CeleriqueEngineCoreUnitTestingCppSrc
+            ${CMAKE_CURRENT_SOURCE_DIR}/tests/*.gtest.cpp
+        )
+        add_executable(
+            CeleriqueEngineCoreUnitTestingCpp
+            ${CeleriqueEngineCoreUnitTestingCppSrc}
+        )
+        target_link_libraries(
+            CeleriqueEngineCoreUnitTestingCpp PUBLIC
+            GTest::gtest_main GTest::gmock_main CeleriqueEngineCore
+        )
+        target_include_directories(
+            CeleriqueEngineCoreUnitTestingCpp PRIVATE
+            ${CMAKE_CURRENT_SOURCE_DIR}/include
+        )
+        gtest_discover_tests(CeleriqueEngineCoreUnitTestingCpp)
+    endif()
+
+    option(
+        BuildCeleriqueEngineCoreUnitTestingC
+        "The Switch that enables building the C unit testing for the core module."
+        OFF
+    )
+
     if (BuildCeleriqueEngineCoreUnitTestingC OR PROJECT_IS_TOP_LEVEL)
         enable_testing()
         find_package(CMocka QUIET)
@@ -40,12 +93,12 @@ if (NOT TARGET CeleriqueEngineCore)
         if (NOT CMocka_FOUND)
             target_link_libraries(
                 TypeUnitTestC PUBLIC
-                ${CMOCKA_STATIC_LIBRARY}
+                CeleriqueEngineCore ${CMOCKA_STATIC_LIBRARY}
             )
         else()
             target_link_libraries(
                 TypeUnitTestC PUBLIC
-                cmocka
+                CeleriqueEngineCore cmocka
             )
         endif()
         target_include_directories(
