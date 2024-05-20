@@ -111,6 +111,30 @@ if (NOT TARGET CeleriqueEngineCore)
         )
 
         add_executable(
+            LoggingUnitTestC
+            ${CMAKE_CURRENT_SOURCE_DIR}/tests/logging.cmocka.c
+        )
+        if (NOT CMocka_FOUND)
+            target_link_libraries(
+                LoggingUnitTestC PUBLIC
+                CeleriqueEngineCore ${CMOCKA_STATIC_LIBRARY}
+            )
+        else()
+            target_link_libraries(
+                LoggingUnitTestC PUBLIC
+                CeleriqueEngineCore cmocka
+            )
+        endif()
+        target_include_directories(
+            LoggingUnitTestC PRIVATE
+            ${cmocka-header_SOURCE_DIR}
+        )
+        add_test(
+            NAME LoggingUnitTestC
+            COMMAND LoggingUnitTestC
+        )
+
+        add_executable(
             TypeUnitTestC
             ${CMAKE_CURRENT_SOURCE_DIR}/tests/types.cmocka.c
         )
