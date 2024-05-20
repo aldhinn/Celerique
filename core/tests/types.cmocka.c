@@ -1,6 +1,6 @@
 /*
 
-File: ./core/tests/types.check.c
+File: ./core/tests/types.cmocka.c
 Author: Aldhinn Espinas
 Description: This tests the expected type behaviours.
 

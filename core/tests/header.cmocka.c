@@ -1,6 +1,6 @@
 /*
 
-File: ./core/tests/header.check.c
+File: ./core/tests/header.cmocka.c
 Author: Aldhinn Espinas
 Description: This test ensures no error when including celerique.h
 
