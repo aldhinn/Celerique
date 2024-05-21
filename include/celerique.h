@@ -14,6 +14,7 @@ License: Mozilla Public License 2.0. (See ./LICENSE).
 #define CELERIQUE_AGGREGATE_HEADER_FILE
 
 #include <celerique/logging.h>
+#include <celerique/events.h>
 
 #endif
 // End of file.
