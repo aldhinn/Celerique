@@ -92,6 +92,8 @@ bool ::celerique::win32::internal::Window::_hasWindowClassRegistered = false;
 
     ShowWindow(reinterpret_cast<HWND>(_windowHandle), SW_SHOW);
     UpdateWindow(reinterpret_cast<HWND>(_windowHandle));
+
+    celeriqueLogDebug("Created a win32 window.");
 }
 
 /// @brief Updates the state.
@@ -523,4 +525,5 @@ LRESULT CALLBACK ::celerique::win32::internal::Window::WindowProc(
 /// @brief Destructor.
 ::celerique::win32::internal::Window::~Window() {
     DestroyWindow(reinterpret_cast<HWND>(_windowHandle));
+    celeriqueLogDebug("Destroyed a win32 window.");
 }
