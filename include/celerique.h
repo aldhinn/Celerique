@@ -16,6 +16,11 @@ License: Mozilla Public License 2.0. (See ./LICENSE).
 #include <celerique/logging.h>
 #include <celerique/events.h>
 
+#include <celerique/events/cursor.h>
+#include <celerique/events/keyboard.h>
+#include <celerique/events/mouse.h>
+#include <celerique/events/window.h>
+
 #endif
 // End of file.
 // DO NOT WRITE BEYOND HERE.
