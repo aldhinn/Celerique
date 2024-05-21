@@ -4,7 +4,7 @@ File: ./core/tests/logging.gtest.cpp
 Author: Aldhinn Espinas
 Description: This tests the logging functionalities.
 
-License: Affero GNU General Public License. (See ./LICENSE).
+License: Mozilla Public License 2.0. (See ./LICENSE).
 
 */
 
