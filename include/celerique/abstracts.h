@@ -8,8 +8,8 @@ License: Mozilla Public License 2.0. (See ./LICENSE).
 
 */
 
-#if !defined(CELERIQUE_GRAPHICS_HEADER_FILE)
-#define CELERIQUE_GRAPHICS_HEADER_FILE
+#if !defined(CELERIQUE_ABSTRACTS_HEADER_FILE)
+#define CELERIQUE_ABSTRACTS_HEADER_FILE
 
 // Begin C++ Only Region.
 #if defined(__cplusplus)
