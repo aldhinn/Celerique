@@ -69,7 +69,6 @@ if (NOT TARGET CeleriqueEngineCore)
         "The Switch that enables building the C unit testing for the core module."
         OFF
     )
-
     if (BuildCeleriqueEngineCoreUnitTestingC OR PROJECT_IS_TOP_LEVEL)
         enable_testing()
         find_package(CMocka QUIET)
