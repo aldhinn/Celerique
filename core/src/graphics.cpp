@@ -124,7 +124,7 @@ _ptrBuffer(other._ptrBuffer) {
     other._ptrBuffer = nullptr;
 
     return *this;
-    }
+}
 
 /// @brief Destructor.
 ::celerique::ShaderProgram::~ShaderProgram() {
