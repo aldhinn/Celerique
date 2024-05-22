@@ -28,6 +28,8 @@ typedef uintptr_t CeleriquePointer;
 typedef int32_t CeleriquePixelUnits;
 /// @brief Type for a byte character.
 typedef uint8_t CeleriqueByte;
+/// @brief A value of this type describes the size of a stack allocated array.
+typedef uint8_t CeleriqueArraySize;
 
 #endif
 // End of file.
