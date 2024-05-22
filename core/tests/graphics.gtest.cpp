@@ -13,6 +13,8 @@ License: Mozilla Public License 2.0. (See ./LICENSE).
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
 
+#include <unordered_set>
+
 namespace celerique {
     /// @brief An implementation of an interface to a mock graphics API.
     class MockGraphicsApi : public IGraphicsAPI {
@@ -25,6 +27,8 @@ namespace celerique {
     public:
         MOCK_METHOD1(onUpdate, void(::std::unique_ptr<IUpdateData>&&));;
     };
+    /// @brief An mock implementation of a pipeline configuration.
+    class MockPipelineConfig : public virtual IPipelineConfig {};
 
     /// @brief The GTest unit test suite for the generic graphics API tests.
     class GraphicsUnitTestCpp : public ::testing::Test {
@@ -70,5 +74,52 @@ namespace celerique {
 
         _ptrWindow->useGraphicsApi(_ptrGraphicsApi);
         _ptrWindow.reset();
+    }
+
+    TEST_F(GraphicsUnitTestCpp, graphicsPipelineConfigIdStartsAt0) {
+        /// @brief Mock graphics API instance.
+        MockGraphicsApi mockGraphicsApi;
+
+        GTEST_ASSERT_EQ(mockGraphicsApi.addGraphicsPipelineConfig(::std::make_unique<MockPipelineConfig>()), 0);
+    }
+
+    TEST_F(GraphicsUnitTestCpp, resetBringsGraphicsPipelineConfigIdBackTo0) {
+        /// @brief Mock graphics API instance.
+        MockGraphicsApi mockGraphicsApi;
+
+        // Normal result.
+        GTEST_ASSERT_EQ(mockGraphicsApi.addGraphicsPipelineConfig(::std::make_unique<MockPipelineConfig>()), 0);
+
+        mockGraphicsApi.resetGraphicsPipelineConfigs();
+        // It should be back to 0.
+        GTEST_ASSERT_EQ(mockGraphicsApi.addGraphicsPipelineConfig(::std::make_unique<MockPipelineConfig>()), 0);
+    }
+
+    TEST_F(GraphicsUnitTestCpp, verifyUniqueIdGeneration) {
+        /// @brief The number of iterations of ID generation calls.
+        const uint32_t iterations = 1000;
+        /// @brief Mock graphics API instance.
+        MockGraphicsApi mockGraphicsApi;
+        /// @brief The container of IDs generated.
+        ::std::vector<PipelineConfigID> vecGeneratedIds;
+        vecGeneratedIds.reserve(iterations);
+
+        // Generate IDs
+        for (uint32_t i = 0; i < iterations; i++) {
+            vecGeneratedIds.push_back(mockGraphicsApi.addGraphicsPipelineConfig(
+                ::std::make_unique<MockPipelineConfig>()
+            ));
+        }
+
+        /// @brief The container for the IDs that were iterated over.
+        ::std::unordered_set<PipelineConfigID> setIteratedOverIds;
+        // Iterate over the generated IDs and examine them one by one for duplicates.
+        for (PipelineConfigID configId : vecGeneratedIds) {
+            // If the current config id is in `setIteratedOverIds`, then a duplicate exists.
+            if (setIteratedOverIds.find(configId) != setIteratedOverIds.end()) {
+                GTEST_ASSERT_FALSE(true);
+            }
+            setIteratedOverIds.insert(configId);
+        }
     }
 }
