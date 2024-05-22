@@ -271,7 +271,7 @@ void celerique::vulkan::internal::Manager::createVulkanInstance() {
 #endif
 
     /// @brief Vulkan instance creation information.
-    VkInstanceCreateInfo createInfo{};
+    VkInstanceCreateInfo createInfo = {};
     createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
     createInfo.pApplicationInfo = &appInfo;
     createInfo.ppEnabledExtensionNames = vulkanInstanceEnabledExtensions.data();
@@ -285,9 +285,12 @@ void celerique::vulkan::internal::Manager::createVulkanInstance() {
 
     // Create the Vulkan instance.
     result = vkCreateInstance(&createInfo, nullptr, &_vulkanInstance);
-    if (result != VK_SUCCESS) {
-        ::std::string errorMessage = "Error in calling vkCreateInstance"
-        "with result " + ::std::to_string(result);
+    if (result == VK_ERROR_INCOMPATIBLE_DRIVER) {
+        const char* errorMessage = "This machine does not have GPU drivers capable of supporting vulkan.";
+        celeriqueLogFatal(errorMessage);
+        throw ::std::runtime_error(errorMessage);
+    } else if (result != VK_SUCCESS) {
+        ::std::string errorMessage = "Error in calling vkCreateInstance with result " + ::std::to_string(result);
         celeriqueLogError(errorMessage);
         throw ::std::runtime_error(errorMessage);
     }
