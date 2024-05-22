@@ -497,7 +497,7 @@ LRESULT CALLBACK ::celerique::win32::internal::Window::WindowProc(
     case WM_KEYDOWN: {
         // Parse the keyboard key code.
         const CeleriqueKeyCode keyCode = win32WParamToCeleriqueKeyCode(wParam);
-        if (keyCode == CELERIQUE_KEYBOARD_KEY_NULL) return;
+        if (keyCode == CELERIQUE_KEYBOARD_KEY_NULL) return 0;
 
         // TODO: Calculate whether the key pressed is repeating.
 
@@ -510,7 +510,7 @@ LRESULT CALLBACK ::celerique::win32::internal::Window::WindowProc(
     case WM_KEYUP: {
         // Parse the keyboard key code.
         const CeleriqueKeyCode keyCode = win32WParamToCeleriqueKeyCode(wParam);
-        if (keyCode == CELERIQUE_KEYBOARD_KEY_NULL) return;
+        if (keyCode == CELERIQUE_KEYBOARD_KEY_NULL) return 0;
 
         ptrWindow->broadcast(
             ::std::make_shared<::celerique::event::KeyboardKeyReleased>(keyCode),
