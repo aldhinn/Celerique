@@ -528,7 +528,6 @@ LRESULT CALLBACK ::celerique::win32::internal::Window::WindowProc(
 ::celerique::win32::internal::Window::~Window() {
     if (_windowHandle != 0) {
         DestroyWindow(reinterpret_cast<HWND>(_windowHandle));
-        _windowHandle = 0;
     }
 
     celeriqueLogDebug("Win32 window destroyed.");

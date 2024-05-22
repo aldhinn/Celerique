@@ -520,7 +520,6 @@ CeleriqueKeyCode celerique::x11::internal::Window::x11KeyCodeToCeleriqueKeyCode(
             ::std::make_shared<::celerique::event::WindowClose>(),
             CELERIQUE_EVENT_HANDLING_STRATEGY_BLOCKING
         );
-        _windowHandle = 0;
     }
     if (_ptrDisplay != nullptr) {
         XCloseDisplay(_ptrDisplay);
