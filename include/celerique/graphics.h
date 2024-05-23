@@ -73,6 +73,7 @@ typedef uintptr_t CeleriquePipelineConfigID;
 #if defined(__cplusplus)
 #include <vector>
 #include <memory>
+#include <string>
 
 namespace celerique {
     /// @brief The interface to the specific graphics API.
@@ -86,6 +87,8 @@ namespace celerique {
     typedef CeleriqueUiProtocol UiProtocol;
     /// @brief The type for a pointer container.
     typedef CeleriquePointer Pointer;
+    /// @brief The type of programming language the shader was written on.
+    typedef CeleriqueShaderSrcLang ShaderSrcLang;
     /// @brief The type of a pipeline shader stage.
     typedef CeleriqueShaderStage ShaderStage;
     /// @brief Type for a byte character.
@@ -156,6 +159,10 @@ namespace celerique {
     /// @param binaryPath The file path of the binary where the shader is to be loaded from.
     /// @return The loaded shader container instance.
     CELERIQUE_SHARED_SYMBOL ShaderProgram loadShaderProgram(const ::std::string& binaryPath);
+    /// @brief Parse the shader source language from the file extension.
+    /// @param filePath The file path string value.
+    /// @return The shader source language type.
+    CELERIQUE_SHARED_SYMBOL ShaderSrcLang fileExtToShaderSrcLang(const ::std::string& filePath);
 
     /// @brief The container to a loaded shader program.
     class CELERIQUE_SHARED_SYMBOL ShaderProgram final {

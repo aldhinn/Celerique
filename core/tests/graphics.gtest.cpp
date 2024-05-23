@@ -122,4 +122,15 @@ namespace celerique {
             setIteratedOverIds.insert(configId);
         }
     }
+
+    TEST_F(GraphicsUnitTestCpp, verifyShaderSrcParsing) {
+        GTEST_ASSERT_EQ(fileExtToShaderSrcLang("some/file"), CELERIQUE_SHADER_SRC_LANG_NULL);
+        GTEST_ASSERT_EQ(fileExtToShaderSrcLang("some/file.cpp.glsl"), CELERIQUE_SHADER_SRC_LANG_GLSL);
+        GTEST_ASSERT_EQ(fileExtToShaderSrcLang("some/file.glsl."), CELERIQUE_SHADER_SRC_LANG_NULL);
+        GTEST_ASSERT_EQ(fileExtToShaderSrcLang("glsl."), CELERIQUE_SHADER_SRC_LANG_NULL);
+        GTEST_ASSERT_EQ(fileExtToShaderSrcLang("hlsl."), CELERIQUE_SHADER_SRC_LANG_NULL);
+        GTEST_ASSERT_EQ(fileExtToShaderSrcLang("glsl.hlsl"), CELERIQUE_SHADER_SRC_LANG_HLSL);
+        GTEST_ASSERT_EQ(fileExtToShaderSrcLang("hlsl.glsl"), CELERIQUE_SHADER_SRC_LANG_GLSL);
+        GTEST_ASSERT_EQ(fileExtToShaderSrcLang("hlsl.hlsl.glsl"), CELERIQUE_SHADER_SRC_LANG_GLSL);
+    }
 }

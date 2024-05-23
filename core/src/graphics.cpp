@@ -96,6 +96,26 @@ void celerique::IGraphicsAPI::resetGraphicsPipelineConfigs() {
     return ::celerique::ShaderProgram(size, ptrBuffer);
 }
 
+/// @brief Parse the shader source language from the file extension.
+/// @param filePath The file path string value.
+/// @return The shader source language type.
+::celerique::ShaderSrcLang celerique::fileExtToShaderSrcLang(const ::std::string& filePath) {
+    // Find the last occurrence of the dot character
+    size_t dotPosition = filePath.find_last_of('.');
+
+    // If no dot is found, or the dot is the first character, there is no extension.
+    if (dotPosition == std::string::npos || dotPosition == 0) {
+        return CELERIQUE_SHADER_SRC_LANG_NULL;
+    }
+    /// @brief The extension string value.
+    ::std::string extension = filePath.substr(dotPosition + 1);
+
+    if (extension == "glsl") return CELERIQUE_SHADER_SRC_LANG_GLSL;
+    if (extension == "hlsl") return CELERIQUE_SHADER_SRC_LANG_HLSL;
+
+    return CELERIQUE_SHADER_SRC_LANG_NULL;
+}
+
 /// @brief Init member constructor.
 /// @param size The size of the buffer containing the shader program.
 /// @param ptrBuffer The pointer to the heap allocated buffer containing the shader program.
