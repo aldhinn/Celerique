@@ -27,8 +27,6 @@ namespace celerique {
     public:
         MOCK_METHOD1(onUpdate, void(::std::unique_ptr<IUpdateData>&&));;
     };
-    /// @brief An mock implementation of a pipeline configuration.
-    class MockPipelineConfig : public virtual IPipelineConfig {};
 
     /// @brief The GTest unit test suite for the generic graphics API tests.
     class GraphicsUnitTestCpp : public ::testing::Test {
@@ -80,7 +78,7 @@ namespace celerique {
         /// @brief Mock graphics API instance.
         MockGraphicsApi mockGraphicsApi;
 
-        GTEST_ASSERT_EQ(mockGraphicsApi.addGraphicsPipelineConfig(::std::make_unique<MockPipelineConfig>()), 0);
+        GTEST_ASSERT_EQ(mockGraphicsApi.addGraphicsPipelineConfig(::std::make_unique<PipelineConfig>()), 0);
     }
 
     TEST_F(GraphicsUnitTestCpp, resetBringsGraphicsPipelineConfigIdBackTo0) {
@@ -88,11 +86,11 @@ namespace celerique {
         MockGraphicsApi mockGraphicsApi;
 
         // Normal result.
-        GTEST_ASSERT_EQ(mockGraphicsApi.addGraphicsPipelineConfig(::std::make_unique<MockPipelineConfig>()), 0);
+        GTEST_ASSERT_EQ(mockGraphicsApi.addGraphicsPipelineConfig(::std::make_unique<PipelineConfig>()), 0);
 
         mockGraphicsApi.resetGraphicsPipelineConfigs();
         // It should be back to 0.
-        GTEST_ASSERT_EQ(mockGraphicsApi.addGraphicsPipelineConfig(::std::make_unique<MockPipelineConfig>()), 0);
+        GTEST_ASSERT_EQ(mockGraphicsApi.addGraphicsPipelineConfig(::std::make_unique<PipelineConfig>()), 0);
     }
 
     TEST_F(GraphicsUnitTestCpp, verifyUniqueIdGeneration) {
@@ -107,7 +105,7 @@ namespace celerique {
         // Generate IDs
         for (uint32_t i = 0; i < iterations; i++) {
             vecGeneratedIds.push_back(mockGraphicsApi.addGraphicsPipelineConfig(
-                ::std::make_unique<MockPipelineConfig>()
+                ::std::make_unique<PipelineConfig>()
             ));
         }
 

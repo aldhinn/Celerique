@@ -38,8 +38,6 @@ typedef uint8_t CeleriqueUiProtocol;
 namespace celerique {
     /// @brief The interface to the specific graphics API.
     class IGraphicsAPI;
-    /// @brief The interface to a pipeline configuration.
-    class IPipelineConfig;
 
     /// @brief The type of UI protocol used to create UI elements.
     typedef CeleriqueUiProtocol UiProtocol;
@@ -75,7 +73,7 @@ namespace celerique {
         /// @param ptrGraphicsPipelineConfig The unique pointer to the graphics pipeline configuration.
         /// @return The unique identifier to the graphics pipeline configuration that was just added.
         virtual PipelineConfigID addGraphicsPipelineConfig(
-            ::std::unique_ptr<IPipelineConfig>&& ptrGraphicsPipelineConfig
+            ::std::unique_ptr<PipelineConfig>&& ptrGraphicsPipelineConfig
         );
         /// @brief Set the graphics pipeline configuration to be used for graphics rendering.
         /// @param graphicsPipelineConfigId The specified identifier of the graphics pipeline config.
@@ -94,7 +92,7 @@ namespace celerique {
     // Protected member variables.
     protected:
         /// @brief The vector of unique pointers to graphics pipeline configurations.
-        ::std::vector<::std::unique_ptr<IPipelineConfig>> _vecPtrGraphicsPipelineConfig;
+        ::std::vector<::std::unique_ptr<PipelineConfig>> _vecPtrGraphicsPipelineConfig;
         /// @brief The identifier to the current graphics pipeline being used for rendering graphics.
         PipelineConfigID _currentGraphicsPipelineConfigUsed = 0;
         /// @brief The value of the next graphics pipeline config identifier value.

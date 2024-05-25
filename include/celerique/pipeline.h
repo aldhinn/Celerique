@@ -128,12 +128,12 @@ namespace celerique {
         ~ShaderProgram();
     };
 
-    /// @brief The interface to a pipeline configuration.
-    class IPipelineConfig {
+    /// @brief The base class to a pipeline configuration.
+    class CELERIQUE_SHARED_SYMBOL PipelineConfig {
     public:
         /// @brief Member init constructor.
         /// @param mapStageTypeToShaderProgram The map of shader stages to their corresponding shader programs.
-        IPipelineConfig(::std::unordered_map<ShaderStage, ShaderProgram>&& mapShaderStageToShaderProgram = {});
+        PipelineConfig(::std::unordered_map<ShaderStage, ShaderProgram>&& mapShaderStageToShaderProgram = {});
 
         /// @brief Access the shader program of a particular shader stage.
         /// @param stage The shader stage specified.
@@ -145,8 +145,8 @@ namespace celerique {
         ::std::unordered_map<ShaderStage, ShaderProgram> _mapShaderStageToShaderProgram;
 
     public:
-        /// @brief Pure virtual destructor.
-        virtual ~IPipelineConfig() = 0;
+        /// @brief Virtual destructor.
+        virtual ~PipelineConfig() {}
     };
 }
 #endif

@@ -108,15 +108,12 @@ _ptrBuffer(other._ptrBuffer) {
 
 /// @brief Member init constructor.
 /// @param mapStageTypeToShaderProgram The map of shader stages to their corresponding shader programs.
-::celerique::IPipelineConfig::IPipelineConfig(::std::unordered_map<ShaderStage, ShaderProgram>&& mapShaderStageToShaderProgram) :
+::celerique::PipelineConfig::PipelineConfig(::std::unordered_map<ShaderStage, ShaderProgram>&& mapShaderStageToShaderProgram) :
 _mapShaderStageToShaderProgram(::std::move(mapShaderStageToShaderProgram)) {}
 
 /// @brief Access the shader program of a particular shader stage.
 /// @param stage The shader stage specified.
 /// @return The reference to the shader program container.
-::celerique::ShaderProgram& celerique::IPipelineConfig::shaderProgram(ShaderStage stage) {
+::celerique::ShaderProgram& celerique::PipelineConfig::shaderProgram(ShaderStage stage) {
     return _mapShaderStageToShaderProgram[stage];
 }
-
-/// @brief Pure virtual destructor.
-::celerique::IPipelineConfig::~IPipelineConfig() {}

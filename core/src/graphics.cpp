@@ -36,7 +36,7 @@ void ::celerique::IWindow::useGraphicsApi(::std::shared_ptr<IGraphicsAPI> ptrGra
 /// @param ptrGraphicsPipelineConfig The unique pointer to the graphics pipeline configuration.
 /// @return The unique identifier to the graphics pipeline configuration that was just added.
 ::celerique::PipelineConfigID celerique::IGraphicsAPI::addGraphicsPipelineConfig(
-    ::std::unique_ptr<IPipelineConfig>&& ptrGraphicsPipelineConfig
+    ::std::unique_ptr<PipelineConfig>&& ptrGraphicsPipelineConfig
 ) {
     // Add the graphics pipeline.
     _vecPtrGraphicsPipelineConfig.emplace_back(::std::move(ptrGraphicsPipelineConfig));
