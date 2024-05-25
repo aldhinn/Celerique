@@ -1,4 +1,3 @@
-
 # File: ./vulkan/CMakeLists.txt
 # Author: Aldhinn Espinas
 # Description: This cmake list file configures the vulkan plugin module
@@ -15,6 +14,7 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/../cmake/language.cmake)
 include(FetchContent)
 
 if (NOT TARGET CeleriqueEngineVulkanPlugin)
+    # Dependencies.
     find_package(Vulkan REQUIRED)
     if (UNIX AND NOT ANDROID AND NOT APPLE)
         find_package(X11 REQUIRED)

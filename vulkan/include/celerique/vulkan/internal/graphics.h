@@ -26,6 +26,10 @@ namespace celerique { namespace vulkan { namespace internal {
         /// @return The singleton instance shared pointer.
         static ::std::shared_ptr<GraphicsAPI> get();
 
+        /// @brief Add a graphics pipeline configuration.
+        /// @param ptrGraphicsPipelineConfig The unique pointer to the graphics pipeline configuration.
+        /// @return The unique identifier to the graphics pipeline configuration that was just added.
+        PipelineConfigID addGraphicsPipelineConfig(::std::unique_ptr<PipelineConfig>&& ptrGraphicsPipelineConfig) override;
         /// @brief Add the window handle to the graphics API.
         /// @param uiProtocol The UI protocol used to create UI elements.
         /// @param windowHandle The handle to the window according to UI protocol.

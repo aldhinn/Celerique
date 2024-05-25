@@ -37,6 +37,10 @@ namespace celerique { namespace vulkan { namespace internal {
         /// @return The reference to the manager instance.
         static Manager& getRef();
 
+        /// @brief Add a graphics pipeline.
+        /// @param ptrGraphicsPipelineConfig The pointer to the graphics pipeline configuration.
+        /// @return The unique identifier to the graphics pipeline configuration that was just added.
+        void addGraphicsPipeline(PipelineConfig* ptrGraphicsPipelineConfig);
         /// @brief Add the window handle to the graphics API.
         /// @param uiProtocol The UI protocol used to create UI elements.
         /// @param windowHandle The handle to the window according to UI protocol.

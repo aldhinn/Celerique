@@ -49,6 +49,13 @@ celerique::vulkan::internal::Manager& celerique::vulkan::internal::Manager::getR
     return instance;
 }
 
+/// @brief Add a graphics pipeline configuration.
+/// @param ptrGraphicsPipelineConfig The pointer to the graphics pipeline configuration.
+/// @return The unique identifier to the graphics pipeline configuration that was just added.
+void ::celerique::vulkan::internal::Manager::addGraphicsPipeline(PipelineConfig* ptrGraphicsPipelineConfig) {
+    // TODO: Implement.
+}
+
 /// @brief Add the window handle to the graphics API.
 /// @param uiProtocol The UI protocol used to create UI elements.
 /// @param windowHandle The handle to the window according to UI protocol.

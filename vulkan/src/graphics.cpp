@@ -14,6 +14,7 @@ License: Mozilla Public License 2.0. (See ./LICENSE).
 #include <celerique/logging.h>
 
 #include <stdexcept>
+#include <utility>
 
 /// @brief Gets the interface to the vulkan graphics API.
 /// @return The shared pointer to the vulkan graphics API interface.
@@ -28,6 +29,16 @@ License: Mozilla Public License 2.0. (See ./LICENSE).
         _ptrInst = ::std::make_shared<internal::GraphicsAPI>();
     }
     return _ptrInst;
+}
+
+/// @brief Add a graphics pipeline configuration.
+/// @param ptrGraphicsPipelineConfig The unique pointer to the graphics pipeline configuration.
+/// @return The unique identifier to the graphics pipeline configuration that was just added.
+::celerique::PipelineConfigID celerique::vulkan::internal::GraphicsAPI::addGraphicsPipelineConfig(
+    ::std::unique_ptr<PipelineConfig>&& ptrGraphicsPipelineConfig
+) {
+    refManager.addGraphicsPipeline(ptrGraphicsPipelineConfig.get());
+    return IGraphicsAPI::addGraphicsPipelineConfig(::std::move(ptrGraphicsPipelineConfig));
 }
 
 /// @brief Add the window handle to the graphics API.
