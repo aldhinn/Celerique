@@ -93,8 +93,8 @@ License: Mozilla Public License 2.0. (See ./LICENSE).
 }
 
 /// @brief Updates the state.
-/// @param ptrArg The unique pointer to the update data container.
-void ::celerique::x11::internal::Window::onUpdate(::std::unique_ptr<IUpdateData>&& ptrUpdateData) {
+/// @param ptrArg The shared pointer to the update data container.
+void ::celerique::x11::internal::Window::onUpdate(::std::shared_ptr<IUpdateData> ptrUpdateData) {
     /// @brief Container for the x11 event.
     XEvent x11Event = {};
     // Collect next event.

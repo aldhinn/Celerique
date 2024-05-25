@@ -34,8 +34,8 @@ namespace celerique { namespace x11 { namespace internal {
         );
 
         /// @brief Updates the state.
-        /// @param ptrArg The unique pointer to the update data container.
-        void onUpdate(::std::unique_ptr<IUpdateData>&& ptrUpdateData = nullptr) override;
+        /// @param ptrArg The shared pointer to the update data container.
+        void onUpdate(::std::shared_ptr<IUpdateData> ptrUpdateData = nullptr) override;
 
     // Helper functions.
     private:

@@ -34,7 +34,7 @@ namespace celerique {
     public:
         /// @brief Default constructor.
         MockStateful() {
-            EXPECT_CALL(*this, onUpdate).WillRepeatedly([&](::std::unique_ptr<IUpdateData>&& ptrUpdateData) {
+            EXPECT_CALL(*this, onUpdate).WillRepeatedly([&](::std::shared_ptr<IUpdateData> ptrUpdateData) {
                 // Determine if update data object is `MockUpdateData`.
                 MockUpdateData* ptrMockUpdateData = dynamic_cast<MockUpdateData*>(ptrUpdateData.get());
                 if (ptrMockUpdateData == nullptr) return;
@@ -45,7 +45,7 @@ namespace celerique {
         /// @brief The latest data received from the last this object was updated.
         int lastDataReceived() { return _lastDataReceived; }
 
-        MOCK_METHOD1(onUpdate, void(::std::unique_ptr<IUpdateData>&&));
+        MOCK_METHOD1(onUpdate, void(::std::shared_ptr<IUpdateData>));
 
     private:
         /// @brief The latest data received from the last this object was updated.
@@ -67,7 +67,7 @@ namespace celerique {
         int expectedData = 23;
 
         // Update.
-        ptrStateful->onUpdate(::std::make_unique<MockUpdateData>(expectedData));
+        ptrStateful->onUpdate(::std::make_shared<MockUpdateData>(expectedData));
 
         // Extract `MockStateful` instance pointer.
         MockStateful* ptrMockStateful = dynamic_cast<MockStateful*>(ptrStateful.get());

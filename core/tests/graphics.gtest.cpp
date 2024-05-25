@@ -25,7 +25,7 @@ namespace celerique {
     /// @brief A mock implementation of an interface to a graphical user interface window.
     class MockWindow : public IWindow {
     public:
-        MOCK_METHOD1(onUpdate, void(::std::unique_ptr<IUpdateData>&&));;
+        MOCK_METHOD1(onUpdate, void(::std::shared_ptr<IUpdateData>));;
     };
 
     /// @brief The GTest unit test suite for the generic graphics API tests.

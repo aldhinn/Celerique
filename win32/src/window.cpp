@@ -97,8 +97,8 @@ bool ::celerique::win32::internal::Window::_hasWindowClassRegistered = false;
 }
 
 /// @brief Updates the state.
-/// @param ptrArg The unique pointer to the update data container.
-void ::celerique::win32::internal::Window::onUpdate(::std::unique_ptr<IUpdateData>&& ptrUpdateData) {
+/// @param ptrArg The shared pointer to the update data container.
+void ::celerique::win32::internal::Window::onUpdate(::std::shared_ptr<IUpdateData> ptrUpdateData) {
     // The container for the message.
     MSG message = {0};
     // If there is a message, translate and dispatch.

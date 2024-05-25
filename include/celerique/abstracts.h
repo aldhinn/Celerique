@@ -27,8 +27,8 @@ namespace celerique {
     class IStateful {
     public:
         /// @brief Updates the state.
-        /// @param ptrArg The unique pointer to the update data container.
-        virtual void onUpdate(::std::unique_ptr<IUpdateData>&& ptrUpdateData = nullptr) = 0;
+        /// @param ptrArg The shared pointer to the update data container.
+        virtual void onUpdate(::std::shared_ptr<IUpdateData> ptrUpdateData = nullptr) = 0;
 
     public:
         /// @brief Pure virtual constructor.
