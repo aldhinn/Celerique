@@ -16,14 +16,19 @@ License: Mozilla Public License 2.0. (See ./LICENSE).
 /// @brief Updates the state.
 /// @param ptrArg The shared pointer to the update data container.
 void ::celerique::internal::Engine::onUpdate(::std::shared_ptr<IUpdateData> ptrUpdateData) {
-    // Update layers.
-    for (::std::unique_ptr<IApplicationLayer>& ptrAppLayer :_vecPtrAppLayers) {
-        ptrAppLayer->onUpdate(ptrUpdateData);
+    {
+        ::std::shared_lock<::std::shared_mutex> readLock(_layerMutex);
+        // Update layers.
+        for (::std::unique_ptr<IApplicationLayer>& ptrAppLayer :_vecPtrAppLayers) {
+            ptrAppLayer->onUpdate(ptrUpdateData);
+        }
     }
-
-    // Update graphical user interface windows.
-    for (::std::unique_ptr<IWindow>& ptrWindow : _vecPtrWindows) {
-        ptrWindow->onUpdate();
+    {
+        ::std::shared_lock<::std::shared_mutex> readLock(_windowsMutex);
+        // Update graphical user interface windows.
+        for (::std::unique_ptr<IWindow>& ptrWindow : _vecPtrWindows) {
+            ptrWindow->onUpdate();
+        }
     }
 }
 
@@ -56,6 +61,7 @@ void ::celerique::internal::Engine::addAppLayer(::std::unique_ptr<IApplicationLa
 
     ptrAppLayer->addEventListener(this);
     _vecPtrAppLayers.emplace_back(::std::move(ptrAppLayer));
+    celeriqueLogTrace("Added a layer.");
 }
 
 /// @brief Add a graphical user interface window to be managed by the engine.
@@ -65,6 +71,7 @@ void ::celerique::internal::Engine::addWindow(::std::unique_ptr<IWindow>&& ptrWi
 
     ptrWindow->addEventListener(this);
     _vecPtrWindows.emplace_back(::std::move(ptrWindow));
+    celeriqueLogTrace("Added a graphical user interface window.");
 }
 
 /// @brief Creates and run the application run loop.
