@@ -72,7 +72,7 @@ void celerique::vulkan::internal::Manager::addWindow(UiProtocol uiProtocol, Poin
         return;
     }
     // If the window widget was previously registered.
-    if (_mapWindowToUiProtocol.find(windowHandle) != _mapWindowToUiProtocol.end()) {
+    if (_mapWindowToSurface.find(windowHandle) != _mapWindowToSurface.end()) {
         celeriqueLogTrace("Window already registered.");
         return;
     }
@@ -83,48 +83,49 @@ void celerique::vulkan::internal::Manager::addWindow(UiProtocol uiProtocol, Poin
     VkPhysicalDevice physicalDeviceForGraphics = selectBestPhysicalDeviceForGraphics(surface);
     /// @brief The handle to the graphics logical device.
     VkDevice graphicsLogicalDevice = nullptr;
-    // If there was a widget with the same UI protocol was registered.
-    if (_mapUiProtocolToGraphicsLogicDev.find(uiProtocol) == _mapUiProtocolToGraphicsLogicDev.end()) {
-        graphicsLogicalDevice = createGraphicsLogicalDevice(
-            uiProtocol, surface, physicalDeviceForGraphics
-        );
+
+    // Find if there is an existing graphics logical device.
+    if (_vecGraphicsLogicDev.size() == 0) {
+        graphicsLogicalDevice = createGraphicsLogicalDevice(windowHandle, physicalDeviceForGraphics);
     } else {
-        graphicsLogicalDevice = _mapUiProtocolToGraphicsLogicDev[uiProtocol];
-        celeriqueLogTrace(
-            "An existing graphics logical device of a window"
-            " with the same UI protocol is to be used."
-        );
+        // TODO: Properly select the best graphics logical device to use.
+        // will settle on the first one for now.
+        graphicsLogicalDevice = _vecGraphicsLogicDev[0];
+
+        _mapWindowToGraphicsLogicDev[windowHandle] = graphicsLogicalDevice;
+        celeriqueLogTrace("Using an existing graphics logical device");
     }
     createSwapChain(windowHandle, uiProtocol, physicalDeviceForGraphics);
-    createSwapChainImageViews(windowHandle, uiProtocol);
-    createRenderPass(uiProtocol);
+    createSwapChainImageViews(windowHandle);
+    createRenderPass(windowHandle);
 
-    _mapWindowToUiProtocol[windowHandle] = uiProtocol;
     celeriqueLogDebug("Registered window.");
 }
 
 /// @brief Remove the window handle from the graphics API registry.
 /// @param windowHandle The handle to the window according to UI protocol.
 void celerique::vulkan::internal::Manager::removeWindow(Pointer windowHandle) {
-    // Lock shared for now as we're only querying.
-    _sharedMutex.lock_shared();
-    // Check if this window is still in the registry. If not, simply halt.
-    if (_mapWindowToUiProtocol.find(windowHandle) == _mapWindowToUiProtocol.end()) {
-        celeriqueLogDebug("Window is not registered. Will halt from here on.");
-        // Release read lock as we're done querying.
-        _sharedMutex.unlock_shared();
-        return;
+    {
+        ::std::shared_lock<::std::shared_mutex> readLock(_sharedMutex);
+
+        // Check if this window is still in the registry. If not, simply halt.
+        if (_mapWindowToSurface.find(windowHandle) == _mapWindowToSurface.end()) {
+            celeriqueLogDebug("Window is not registered. Will halt from here on.");
+            return;
+        }
     }
-    // Release read lock as we're done querying.
-    _sharedMutex.unlock_shared();
 
     // Write lock thread during window removal.
     ::std::unique_lock<::std::shared_mutex> writeLock(_sharedMutex);
 
-    /// @brief The value of the particular UI protocol.
-    UiProtocol uiProtocol = _mapWindowToUiProtocol[windowHandle];
     /// @brief The logical device for graphics purposes.
-    VkDevice graphicsLogicalDevice = _mapUiProtocolToGraphicsLogicDev[uiProtocol];
+    VkDevice graphicsLogicalDevice = _mapWindowToGraphicsLogicDev[windowHandle];
+
+    /// @brief The render pass to be destroyed.
+    VkRenderPass renderPass = _mapWindowToRenderPass[windowHandle];
+    vkDestroyRenderPass(graphicsLogicalDevice, renderPass, nullptr);
+    _mapWindowToRenderPass.erase(windowHandle);
+    celeriqueLogTrace("Destroyed window render pass.");
 
     /// @brief The swapchain image views of the window.
     ::std::vector<VkImageView>& vecSwapChainImageViews = _mapWindowToVecSwapChainImageViews[windowHandle];
@@ -152,8 +153,7 @@ void celerique::vulkan::internal::Manager::removeWindow(Pointer windowHandle) {
     _mapWindowToSurface.erase(windowHandle);
     celeriqueLogTrace("Destroyed window surface.");
 
-    // Remove from registry.
-    _mapWindowToUiProtocol.erase(windowHandle);
+    _mapWindowToGraphicsLogicDev.erase(windowHandle);    
     celeriqueLogDebug("Removed window from registry.");
 }
 
@@ -336,18 +336,18 @@ void celerique::vulkan::internal::Manager::collectAvailablePhysicalDevices() {
 
 /// @brief Destroy all render passes.
 void celerique::vulkan::internal::Manager::destroyRenderPasses() {
-    for (const auto& pairUiProtocolToRenderPass : _mapUiProtocolToRenderPass) {
-        /// @brief The value of the particular UI protocol.
-        UiProtocol uiProtocol = pairUiProtocolToRenderPass.first;
-        /// @brief The render pass to be destroyed.
-        VkRenderPass renderPass = pairUiProtocolToRenderPass.second;
+    for (const auto& pairWindowToRenderPass : _mapWindowToRenderPass) {
+        /// @brief The handle to the window.
+        Pointer windowHandle = pairWindowToRenderPass.first;
         /// @brief The graphics logical device that created the render pass.
-        VkDevice graphicsLogicalDevice = _mapUiProtocolToGraphicsLogicDev[uiProtocol];
+        VkDevice graphicsLogicalDevice = _mapWindowToGraphicsLogicDev[windowHandle];
+        /// @brief The render pass to be destroyed.
+        VkRenderPass renderPass = pairWindowToRenderPass.second;
 
         // Destroy render pass.
         vkDestroyRenderPass(graphicsLogicalDevice, renderPass, nullptr);
     }
-    _mapUiProtocolToRenderPass.clear();
+    _mapWindowToRenderPass.clear();
 
     celeriqueLogTrace("Destroyed all render passes.");
 }
@@ -355,10 +355,10 @@ void celerique::vulkan::internal::Manager::destroyRenderPasses() {
 /// @brief Destroy swapchain image views.
 void celerique::vulkan::internal::Manager::destroySwapChainImageViews() {
     for (const auto& pairWindowToVecSwapChainImageViews : _mapWindowToVecSwapChainImageViews) {
-        /// @brief The value of the particular UI protocol.
-        UiProtocol uiProtocol = _mapWindowToUiProtocol[pairWindowToVecSwapChainImageViews.first];
+        /// @brief The window handle.
+        Pointer windowHandle = pairWindowToVecSwapChainImageViews.first;
         /// @brief The handle to the graphics logical device that created the swapchain.
-        VkDevice graphicsLogicalDevice = _mapUiProtocolToGraphicsLogicDev[uiProtocol];
+        VkDevice graphicsLogicalDevice = _mapWindowToGraphicsLogicDev[windowHandle];
         /// @brief The vector of image views to be destroyed.
         ::std::vector<VkImageView> vecSwapChainImageViews = pairWindowToVecSwapChainImageViews.second;
         // Iterate and destroy each.
@@ -374,10 +374,10 @@ void celerique::vulkan::internal::Manager::destroySwapChainImageViews() {
 /// @brief Destroy all swapchain objects.
 void celerique::vulkan::internal::Manager::destroySwapChains() {
     for (const auto& pairWindowToSwapchain : _mapWindowToSwapChain) {
-        /// @brief The value of the particular UI protocol.
-        UiProtocol uiProtocol = _mapWindowToUiProtocol[pairWindowToSwapchain.first];
+        /// @brief The window handle.
+         Pointer windowHandle = pairWindowToSwapchain.first;;
         /// @brief The handle to the graphics logical device that created the swapchain.
-        VkDevice graphicsLogicalDevice = _mapUiProtocolToGraphicsLogicDev[uiProtocol];
+        VkDevice graphicsLogicalDevice = _mapWindowToGraphicsLogicDev[windowHandle];
         /// @brief The swapchain to be destroyed.
         VkSwapchainKHR swapchain = pairWindowToSwapchain.second;
 
@@ -385,17 +385,17 @@ void celerique::vulkan::internal::Manager::destroySwapChains() {
         vkDestroySwapchainKHR(graphicsLogicalDevice, swapchain, nullptr);
     }
     _mapWindowToSwapChain.clear();
+    _mapWindowToSwapChainImageFormat.clear();
 
     celeriqueLogTrace("Destroyed swapchains.");
 }
 
 /// @brief Destroys all logical devices.
 void celerique::vulkan::internal::Manager::destroyLogicalDevices() {
-    for (const auto& pairUiProtocolToGraphicsLogicDev : _mapUiProtocolToGraphicsLogicDev) {
-        VkDevice logicalDevice = pairUiProtocolToGraphicsLogicDev.second;
+    for (VkDevice logicalDevice : _vecGraphicsLogicDev) {
         vkDestroyDevice(logicalDevice, nullptr);
     }
-    _mapUiProtocolToGraphicsLogicDev.clear();
+    _vecGraphicsLogicDev.clear();
 
     celeriqueLogTrace("Destroyed logical devices.");
 }
@@ -535,12 +535,14 @@ VkPhysicalDevice celerique::vulkan::internal::Manager::selectBestPhysicalDeviceF
 }
 
 /// @brief Create a graphics logical device for the window
-/// @param uiProtocol The UI protocol used to create UI elements.
-/// @param surface The handle to the vulkan surface.
+/// @param windowHandle The UI protocol native pointer of the window to be registered.
 /// @param physicalDevice The handle to the physical device.
-VkDevice celerique::vulkan::internal::Manager::createGraphicsLogicalDevice(UiProtocol uiProtocol, VkSurfaceKHR surface, VkPhysicalDevice physicalDevice) {
+VkDevice celerique::vulkan::internal::Manager::createGraphicsLogicalDevice(Pointer windowHandle, VkPhysicalDevice physicalDevice) {
     // The variable that stores the result of any vulkan function called.
     VkResult result;
+
+    /// @brief The handle to the vulkan surface.
+    VkSurfaceKHR surface = _mapWindowToSurface[windowHandle];
 
     // Obtain queue family indices with graphics capabilities.
     ::std::vector<uint32_t> vecQueueFamIndicesGraphics = getQueueFamilyIndicesWithFlagBits(
@@ -603,8 +605,8 @@ VkDevice celerique::vulkan::internal::Manager::createGraphicsLogicalDevice(UiPro
         celeriqueLogError(errorMessage);
         throw ::std::runtime_error(errorMessage);
     }
-    // Assign graphics logical device to the ui protocol.
-    _mapUiProtocolToGraphicsLogicDev[uiProtocol] = graphicsLogicalDevice;
+    _mapWindowToGraphicsLogicDev[windowHandle] = graphicsLogicalDevice;
+    _vecGraphicsLogicDev.push_back(graphicsLogicalDevice);
     celeriqueLogTrace("Created graphics logical device.");
 
     /// @brief The container for the window's graphics queues.
@@ -637,8 +639,8 @@ VkDevice celerique::vulkan::internal::Manager::createGraphicsLogicalDevice(UiPro
             vecPresentQueues.push_back(queue);
         }
     }
-    _mapUiProtocolToVecGraphicsQueues[uiProtocol] = ::std::move(vecGraphicsQueues);
-    _mapUiProtocolToVecPresentQueues[uiProtocol] = ::std::move(vecPresentQueues);
+    _mapGraphicsLogicDevToVecGraphicsQueues[graphicsLogicalDevice] = ::std::move(vecGraphicsQueues);
+    _mapGraphicsLogicDevToVecPresentQueues[graphicsLogicalDevice] = ::std::move(vecPresentQueues);
 
     celeriqueLogTrace("Retrieved necessary queues for rendering graphics.");
     return graphicsLogicalDevice;
@@ -655,14 +657,14 @@ void celerique::vulkan::internal::Manager::createSwapChain(Pointer windowHandle,
     /// @brief The surface to be used to create the swapchain.
     VkSurfaceKHR surface = _mapWindowToSurface[windowHandle];
     /// @brief The graphics logical device to be used to create the swapchain.
-    VkDevice graphicsLogicalDevice = _mapUiProtocolToGraphicsLogicDev[uiProtocol];
+    VkDevice graphicsLogicalDevice = _mapWindowToGraphicsLogicDev[windowHandle];
 
     /// @brief The device surface format.
     ::std::vector<VkSurfaceFormatKHR> surfaceFormats = getSurfaceFormats(physicalDevice, surface);
 
     // If a window of the same UI protocol has yet to be registered,
-    if (_mapUiProtocolToSwapChainImageFormat.find(uiProtocol) == _mapUiProtocolToSwapChainImageFormat.end())
-        _mapUiProtocolToSwapChainImageFormat[uiProtocol] = chooseSwapChainImageFormat(surfaceFormats);
+    if (_mapWindowToSwapChainImageFormat.find(windowHandle) == _mapWindowToSwapChainImageFormat.end())
+        _mapWindowToSwapChainImageFormat[windowHandle] = chooseSwapChainImageFormat(surfaceFormats);
 
     /// @brief The device present modes.
     ::std::vector<VkPresentModeKHR> presentModes = getPresentModes(physicalDevice, surface);
@@ -687,7 +689,7 @@ void celerique::vulkan::internal::Manager::createSwapChain(Pointer windowHandle,
     swapChainInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
     swapChainInfo.surface = surface;
     swapChainInfo.minImageCount = determineMinImageCount(surfaceCapabilities);
-    swapChainInfo.imageFormat = _mapUiProtocolToSwapChainImageFormat[uiProtocol];
+    swapChainInfo.imageFormat = _mapWindowToSwapChainImageFormat[windowHandle];
     swapChainInfo.presentMode = chooseSwapChainPresentMode(presentModes);
     swapChainInfo.clipped = VK_TRUE; // Simply clip the obscured pixels.
     swapChainInfo.imageExtent = _mapWindowToSwapChainExtent[windowHandle];
@@ -713,13 +715,12 @@ void celerique::vulkan::internal::Manager::createSwapChain(Pointer windowHandle,
 
 /// @brief Create the swapchain image views.
 /// @param windowHandle The UI protocol native pointer of the window to be registered.
-/// @param uiProtocol The UI protocol used to create UI elements.
-void celerique::vulkan::internal::Manager::createSwapChainImageViews(Pointer windowHandle, UiProtocol uiProtocol) {
+void celerique::vulkan::internal::Manager::createSwapChainImageViews(Pointer windowHandle) {
     /// @brief The container for the result code from the vulkan api.
     VkResult result;
 
     /// @brief The handle to the graphics logical device that created the swapchain.
-    VkDevice graphicsLogicalDevice = _mapUiProtocolToGraphicsLogicDev[uiProtocol];
+    VkDevice graphicsLogicalDevice = _mapWindowToGraphicsLogicDev[windowHandle];
     /// @brief The handle to the window's swapchain.
     VkSwapchainKHR swapChain = _mapWindowToSwapChain[windowHandle];
 
@@ -751,7 +752,7 @@ void celerique::vulkan::internal::Manager::createSwapChainImageViews(Pointer win
         imageViewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
         imageViewInfo.image = swapChainImage;
         imageViewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-        imageViewInfo.format = _mapUiProtocolToSwapChainImageFormat[uiProtocol];
+        imageViewInfo.format = _mapWindowToSwapChainImageFormat[windowHandle];
         imageViewInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
         imageViewInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
         imageViewInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
@@ -780,23 +781,16 @@ void celerique::vulkan::internal::Manager::createSwapChainImageViews(Pointer win
 }
 
 /// @brief Create the render pass for windows implemented in the specified UI protocol.
-/// @param uiProtocol The UI protocol used to create UI elements.
-void celerique::vulkan::internal::Manager::createRenderPass(UiProtocol uiProtocol) {
-    if (_mapUiProtocolToRenderPass.find(uiProtocol) != _mapUiProtocolToRenderPass.end()) {
-        celeriqueLogTrace("Using existing render pass for a previously registered window of the same UI protocol.");
-        // Simply halt.
-        return;
-    }
-
+/// @param windowHandle The UI protocol native pointer of the window to be registered.
+void ::celerique::vulkan::internal::Manager::createRenderPass(Pointer windowHandle) {
     /// @brief The container for the result code from the vulkan api.
     VkResult result;
-
     /// @brief The handle to the graphics logical device.
-    VkDevice graphicsLogicalDevice = _mapUiProtocolToGraphicsLogicDev[uiProtocol];
+    VkDevice graphicsLogicalDevice = _mapWindowToGraphicsLogicDev[windowHandle];
 
     /// @brief Contains information about the colour attachment.
     VkAttachmentDescription colourAttachment = {};
-    colourAttachment.format = _mapUiProtocolToSwapChainImageFormat[uiProtocol];
+    colourAttachment.format = _mapWindowToSwapChainImageFormat[windowHandle];
     colourAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
     colourAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
     colourAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -843,7 +837,7 @@ void celerique::vulkan::internal::Manager::createRenderPass(UiProtocol uiProtoco
         celeriqueLogError(errorMessage);
         throw ::std::runtime_error(errorMessage);
     }
-    _mapUiProtocolToRenderPass[uiProtocol] = renderPass;
+    _mapWindowToRenderPass[windowHandle] = renderPass;
 
     celeriqueLogTrace("Created a new render pass.");
 }
@@ -890,9 +884,9 @@ VkPresentModeKHR celerique::vulkan::internal::Manager::chooseSwapChainPresentMod
 }
 
 /// @brief Determine the swapchain extent which calculates the resolution of the swapchain images.
+/// @param surfaceCapabilities The surface capabilities structure.
 /// @param windowHandle The UI protocol native pointer of the window to be registered.
 /// @param uiProtocol The UI protocol used to create UI elements.
-/// @param surfaceCapabilities The surface capabilities structure.
 /// @return The swapchain extent.
 VkExtent2D celerique::vulkan::internal::Manager::determineSwapChainExtent(const VkSurfaceCapabilitiesKHR& surfaceCapabilities, Pointer windowHandle, UiProtocol uiProtocol) {
     if (surfaceCapabilities.currentExtent.width != UINT32_MAX)

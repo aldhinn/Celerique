@@ -88,10 +88,9 @@ namespace celerique { namespace vulkan { namespace internal {
         /// @return The handle to the best physical device for graphics.
         VkPhysicalDevice selectBestPhysicalDeviceForGraphics(VkSurfaceKHR surface);
         /// @brief Create a graphics logical device for the window
-        /// @param uiProtocol The UI protocol used to create UI elements.
-        /// @param surface The handle to the vulkan surface.
+        /// @param windowHandle The UI protocol native pointer of the window to be registered.
         /// @param physicalDevice The handle to the physical device.
-        VkDevice createGraphicsLogicalDevice(UiProtocol uiProtocol, VkSurfaceKHR surface, VkPhysicalDevice physicalDevice);
+        VkDevice createGraphicsLogicalDevice(Pointer windowHandle, VkPhysicalDevice physicalDevice);
         /// @brief Creates a swapchain for the window.
         /// @param windowHandle The UI protocol native pointer of the window to be registered.
         /// @param uiProtocol The UI protocol used to create UI elements.
@@ -99,11 +98,10 @@ namespace celerique { namespace vulkan { namespace internal {
         void createSwapChain(Pointer windowHandle, UiProtocol uiProtocol, VkPhysicalDevice physicalDevice);
         /// @brief Create the swapchain image views.
         /// @param windowHandle The UI protocol native pointer of the window to be registered.
-        /// @param uiProtocol The UI protocol used to create UI elements.
-        void createSwapChainImageViews(Pointer windowHandle, UiProtocol uiProtocol);
+        void createSwapChainImageViews(Pointer windowHandle);
         /// @brief Create the render pass for windows implemented in the specified UI protocol.
-        /// @param uiProtocol The UI protocol used to create UI elements.
-        void createRenderPass(UiProtocol uiProtocol);
+        /// @param windowHandle The UI protocol native pointer of the window to be registered.
+        void createRenderPass(Pointer windowHandle);
 
     // Swapchain helper functions.
     private:
@@ -116,9 +114,9 @@ namespace celerique { namespace vulkan { namespace internal {
         /// @return The best present mode.
         VkPresentModeKHR chooseSwapChainPresentMode(const ::std::vector<VkPresentModeKHR>& vecPresentModes);
         /// @brief Determine the swapchain extent which calculates the resolution of the swapchain images.
+        /// @param surfaceCapabilities The surface capabilities structure.
         /// @param windowHandle The UI protocol native pointer of the window to be registered.
         /// @param uiProtocol The UI protocol used to create UI elements.
-        /// @param surfaceCapabilities The surface capabilities structure.
         /// @return The swapchain extent.
         VkExtent2D determineSwapChainExtent(const VkSurfaceCapabilitiesKHR& surfaceCapabilities, Pointer windowHandle, UiProtocol uiProtocol);
         /// @brief Determine the minimum image capabilities based on the surface capabilities.
@@ -216,24 +214,24 @@ namespace celerique { namespace vulkan { namespace internal {
         };
         /// @brief The map of a window to a vulkan surface instance.
         ::std::unordered_map<Pointer, VkSurfaceKHR> _mapWindowToSurface;
-        /// @brief The map of a particular UI protocol to its assigned graphics logical device.
-        ::std::unordered_map<UiProtocol, VkDevice> _mapUiProtocolToGraphicsLogicDev;
-        /// @brief The map of a particular UI protocol to its graphics queues.
-        ::std::unordered_map<UiProtocol, ::std::vector<VkQueue>> _mapUiProtocolToVecGraphicsQueues;
-        /// @brief The map of a particular UI protocol to its present queues.
-        ::std::unordered_map<UiProtocol, ::std::vector<VkQueue>> _mapUiProtocolToVecPresentQueues;
-        /// @brief The map of a window to its UI protocol implementation.
-        ::std::unordered_map<Pointer, UiProtocol> _mapWindowToUiProtocol;
+        /// @brief The collection of graphics logical devices used.
+        ::std::vector<VkDevice> _vecGraphicsLogicDev;
+        /// @brief The map of a window to its associated graphics logical device.
+        ::std::unordered_map<Pointer, VkDevice> _mapWindowToGraphicsLogicDev;
+        /// @brief The map of a graphics logical device to its graphics queues.
+        ::std::unordered_map<VkDevice, ::std::vector<VkQueue>> _mapGraphicsLogicDevToVecGraphicsQueues;
+        /// @brief The map of a graphics logical device to its present queues.
+        ::std::unordered_map<VkDevice, ::std::vector<VkQueue>> _mapGraphicsLogicDevToVecPresentQueues;
         /// @brief The map of window to its swapchain.
         ::std::unordered_map<Pointer, VkSwapchainKHR> _mapWindowToSwapChain;
-        /// @brief The map of a particular UI protocol to its swapchain image format.
-        ::std::unordered_map<UiProtocol, VkFormat> _mapUiProtocolToSwapChainImageFormat;
+        /// @brief The map of a window to its swapchain image format.
+        ::std::unordered_map<Pointer, VkFormat> _mapWindowToSwapChainImageFormat;
         /// @brief The map of a window to the extent description of its swapchain.
         ::std::unordered_map<Pointer, VkExtent2D> _mapWindowToSwapChainExtent;
         /// @brief The map of a window to the swapchain image views.
         ::std::unordered_map<Pointer, ::std::vector<VkImageView>> _mapWindowToVecSwapChainImageViews;
-        /// @brief The map of a particular UI protocol to its render pass.
-        ::std::unordered_map<UiProtocol, VkRenderPass> _mapUiProtocolToRenderPass;
+        /// @brief The map of a window to its render pass.
+        ::std::unordered_map<Pointer, VkRenderPass> _mapWindowToRenderPass;
 
         // Validation layer objects.
 #if defined(CELERIQUE_DEBUG_MODE)
