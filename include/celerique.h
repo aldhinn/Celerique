@@ -77,8 +77,8 @@ namespace celerique {
     class IApplicationLayer : public virtual IStateful, public virtual IEventListener,
     public virtual EventBroadcaster {
     public:
-        /// @brief Virtual destructor.
-        virtual ~IApplicationLayer() {}
+        /// @brief Pure virtual destructor.
+        virtual ~IApplicationLayer() = 0;
     };
 }
 #endif

@@ -154,3 +154,6 @@ int64_t celerique::EngineUpdateData::elapsedMicroSecs() const {
 int64_t celerique::EngineUpdateData::elapsedMilliSecs() const {
     return ::std::chrono::duration_cast<::std::chrono::milliseconds>(_elapsedNanoSecs).count();
 }
+
+/// @brief Pure virtual destructor.
+::celerique::IApplicationLayer::~IApplicationLayer() {}
