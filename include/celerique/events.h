@@ -27,8 +27,10 @@ typedef uint8_t CeleriqueEventCategory;
 #define CELERIQUE_EVENT_CATEGORY_TOUCH                                          CELERIQUE_LEFT_BIT_SHIFT_1(2)
 /// @brief Input events relating to mouse or touch.
 #define CELERIQUE_EVENT_CATEGORY_CURSOR                                         CELERIQUE_EVENT_CATEGORY_MOUSE | CELERIQUE_EVENT_CATEGORY_TOUCH
-/// @brief Application type events.
-#define CELERIQUE_EVENT_CATEGORY_APPLICATION                                    CELERIQUE_LEFT_BIT_SHIFT_1(3)
+/// @brief Engine type events.
+#define CELERIQUE_EVENT_CATEGORY_ENGINE                                         CELERIQUE_LEFT_BIT_SHIFT_1(3)
+/// @brief Window related events.
+#define CELERIQUE_EVENT_CATEGORY_WINDOW                                         CELERIQUE_LEFT_BIT_SHIFT_1(4)
 /// @brief The category for events related to any user input.
 #define CELERIQUE_EVENT_CATEGORY_INPUT                                          CELERIQUE_EVENT_CATEGORY_KEYBOARD | CELERIQUE_EVENT_CATEGORY_CURSOR
 

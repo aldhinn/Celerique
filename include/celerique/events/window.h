@@ -46,7 +46,7 @@ namespace celerique { namespace event {
         /// @return `_height` value.
         inline PixelUnits height() const { return _height; }
 
-        CELERIQUE_IMPL_EVENT(WindowResize, CELERIQUE_EVENT_CATEGORY_APPLICATION);
+        CELERIQUE_IMPL_EVENT(WindowResize, CELERIQUE_EVENT_CATEGORY_WINDOW);
 
     private:
         /// @brief Describes the new width of the window being resized.
@@ -77,7 +77,7 @@ namespace celerique { namespace event {
         /// @return `_yPos` value.
         inline PixelUnits yPos() const { return _yPos; }
 
-        CELERIQUE_IMPL_EVENT(WindowMove, CELERIQUE_EVENT_CATEGORY_APPLICATION);
+        CELERIQUE_IMPL_EVENT(WindowMove, CELERIQUE_EVENT_CATEGORY_WINDOW);
 
     private:
         /// @brief The new horizontal coordinate position relative
@@ -92,7 +92,7 @@ namespace celerique { namespace event {
     class CELERIQUE_SHARED_SYMBOL WindowClose final :
     public virtual Window, public virtual Event {
     public:
-        CELERIQUE_IMPL_EVENT(WindowClose, CELERIQUE_EVENT_CATEGORY_APPLICATION);
+        CELERIQUE_IMPL_EVENT(WindowClose, CELERIQUE_EVENT_CATEGORY_WINDOW);
     };
 
     /// @brief An event type to be dispatched when there is a
@@ -100,21 +100,21 @@ namespace celerique { namespace event {
     class CELERIQUE_SHARED_SYMBOL WindowRequestClose final :
     public virtual Window, public virtual Event {
     public:
-        CELERIQUE_IMPL_EVENT(WindowRequestClose, CELERIQUE_EVENT_CATEGORY_APPLICATION);
+        CELERIQUE_IMPL_EVENT(WindowRequestClose, CELERIQUE_EVENT_CATEGORY_WINDOW);
     };
 
     /// @brief An event type to be dispatched when the window is minimized.
     class CELERIQUE_SHARED_SYMBOL WindowMinimized final :
     public virtual Window, public virtual Event {
     public:
-        CELERIQUE_IMPL_EVENT(WindowMinimized, CELERIQUE_EVENT_CATEGORY_APPLICATION);
+        CELERIQUE_IMPL_EVENT(WindowMinimized, CELERIQUE_EVENT_CATEGORY_WINDOW);
     };
 
     /// @brief An event type to be dispatched when the window is being focused.
     class CELERIQUE_SHARED_SYMBOL WindowFocused final :
     public virtual Window, public virtual Event {
     public:
-        CELERIQUE_IMPL_EVENT(WindowFocused, CELERIQUE_EVENT_CATEGORY_APPLICATION);
+        CELERIQUE_IMPL_EVENT(WindowFocused, CELERIQUE_EVENT_CATEGORY_WINDOW);
     };
 }}
 #endif

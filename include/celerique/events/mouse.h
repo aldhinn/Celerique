@@ -43,7 +43,7 @@ namespace celerique { namespace event {
 
     /// @brief An event type regarding the mouse cursor moving.
     class CELERIQUE_SHARED_SYMBOL MouseMoved final :
-    public virtual CursorMoved, public virtual Event {
+    public virtual CursorMoved, public virtual Event, public virtual Mouse {
     public:
         /// @brief Init constructor.
         /// @param deltaX The horizontal component of the offset.
