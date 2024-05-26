@@ -8,7 +8,7 @@ License: Mozilla Public License 2.0. (See ./LICENSE).
 
 */
 
-#include <celerique/logging.h>
+#include <celerique.h>
 
 #include <stdarg.h>
 #include <setjmp.h>
@@ -36,7 +36,7 @@ void consoleLog() {
 /// @return Exit code.
 int main(int argc, char** argv) {
     const struct CMUnitTest tests[] = {
-    cmocka_unit_test(consoleLog)
+        cmocka_unit_test(consoleLog)
     };
 
     return cmocka_run_group_tests(tests, NULL, NULL);
