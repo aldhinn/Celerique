@@ -53,6 +53,7 @@ celerique::vulkan::internal::Manager& celerique::vulkan::internal::Manager::getR
 /// @param ptrGraphicsPipelineConfig The pointer to the graphics pipeline configuration.
 /// @return The unique identifier to the graphics pipeline configuration that was just added.
 void ::celerique::vulkan::internal::Manager::addGraphicsPipeline(PipelineConfig* ptrGraphicsPipelineConfig) {
+    ::std::unique_lock<::std::shared_mutex> writeLock(_sharedMutex);
     // TODO: Implement.
 }
 
@@ -95,9 +96,12 @@ void celerique::vulkan::internal::Manager::addWindow(UiProtocol uiProtocol, Poin
         _mapWindowToGraphicsLogicDev[windowHandle] = graphicsLogicalDevice;
         celeriqueLogTrace("Using an existing graphics logical device");
     }
+
     createSwapChain(windowHandle, uiProtocol, physicalDeviceForGraphics);
     createSwapChainImageViews(windowHandle);
     createRenderPass(windowHandle);
+    createSwapChainFrameBuffers(windowHandle);
+    createCommandBuffers(windowHandle);
 
     celeriqueLogDebug("Registered window.");
 }
@@ -121,6 +125,18 @@ void celerique::vulkan::internal::Manager::removeWindow(Pointer windowHandle) {
     /// @brief The logical device for graphics purposes.
     VkDevice graphicsLogicalDevice = _mapWindowToGraphicsLogicDev[windowHandle];
 
+    _mapWindowToVecCommandBuffers.erase(windowHandle);
+    celeriqueLogTrace("Removed command buffer references for the window.");
+
+    /// @brief The swapchain frame buffers to be destroyed.
+    const ::std::vector<VkFramebuffer>& vecSwapChainFrameBuffers = _mapWindowToVecSwapChainFrameBuffers[windowHandle];
+    // Destroy the frame buffers.
+    for (VkFramebuffer swapChainFrameBuffer : vecSwapChainFrameBuffers) {
+        vkDestroyFramebuffer(graphicsLogicalDevice, swapChainFrameBuffer, nullptr);
+    }
+    _mapWindowToVecSwapChainFrameBuffers.erase(windowHandle);
+    celeriqueLogTrace("Destroyed window swapchain frame buffers.");
+
     /// @brief The render pass to be destroyed.
     VkRenderPass renderPass = _mapWindowToRenderPass[windowHandle];
     vkDestroyRenderPass(graphicsLogicalDevice, renderPass, nullptr);
@@ -128,17 +144,13 @@ void celerique::vulkan::internal::Manager::removeWindow(Pointer windowHandle) {
     celeriqueLogTrace("Destroyed window render pass.");
 
     /// @brief The swapchain image views of the window.
-    ::std::vector<VkImageView>& vecSwapChainImageViews = _mapWindowToVecSwapChainImageViews[windowHandle];
+    const ::std::vector<VkImageView>& vecSwapChainImageViews = _mapWindowToVecSwapChainImageViews[windowHandle];
     // Destroy image views.
     for (VkImageView swapChainImageView : vecSwapChainImageViews) {
         vkDestroyImageView(graphicsLogicalDevice, swapChainImageView, nullptr);
     }
     _mapWindowToVecSwapChainImageViews.erase(windowHandle);
-    celeriqueLogTrace("Destroyed window image views.");
-
-    // Delete swapchain extent.
-    _mapWindowToSwapChainExtent.erase(windowHandle);
-    celeriqueLogTrace("Erased window swapchain extent.");
+    celeriqueLogTrace("Destroyed window swapchain image views.");
 
     /// @brief The swapchain of the window.
     VkSwapchainKHR swapChain = _mapWindowToSwapChain[windowHandle];
@@ -147,13 +159,22 @@ void celerique::vulkan::internal::Manager::removeWindow(Pointer windowHandle) {
     _mapWindowToSwapChain.erase(windowHandle);
     celeriqueLogTrace("Destroyed window swapchain.");
 
+    // Delete swapchain extent.
+    _mapWindowToSwapChainExtent.erase(windowHandle);
+    celeriqueLogTrace("Erased window swapchain extent.");
+
+    _mapWindowToGraphicsCommandPool.erase(windowHandle);
+    celeriqueLogTrace("Removed command pool reference for the window.");
+
+    _mapWindowToGraphicsLogicDev.erase(windowHandle);
+    celeriqueLogTrace("Removed graphics logical device reference for the window.");
+
     /// @brief The surface registered to the window.
     VkSurfaceKHR surface = _mapWindowToSurface[windowHandle];
     vkDestroySurfaceKHR(_vulkanInstance, surface, nullptr);
     _mapWindowToSurface.erase(windowHandle);
     celeriqueLogTrace("Destroyed window surface.");
 
-    _mapWindowToGraphicsLogicDev.erase(windowHandle);    
     celeriqueLogDebug("Removed window from registry.");
 }
 
@@ -176,9 +197,11 @@ celerique::vulkan::internal::Manager::~Manager() {
     // Write lock thread during resource cleanup.
     ::std::unique_lock<::std::shared_mutex> writeLock(_sharedMutex);
 
+    destroySwapChainFrameBuffers();
     destroyRenderPasses();
     destroySwapChainImageViews();
     destroySwapChains();
+    destroyCommandPools();
     destroyLogicalDevices();
     destroyRegisteredSurfaces();
 #if defined(CELERIQUE_DEBUG_MODE)
@@ -334,6 +357,24 @@ void celerique::vulkan::internal::Manager::collectAvailablePhysicalDevices() {
     );
 }
 
+/// @brief Destroy all swapchain frame buffers.
+void celerique::vulkan::internal::Manager::destroySwapChainFrameBuffers() {
+    for (const auto& pairWindowToVecSwapChainFrameBuffers : _mapWindowToVecSwapChainFrameBuffers) {
+        /// @brief The window handle.
+        Pointer windowHandle = pairWindowToVecSwapChainFrameBuffers.first;
+        /// @brief The assigned graphics logical device to the window.
+        VkDevice graphicsLogicalDevice = _mapWindowToGraphicsLogicDev[windowHandle];
+        /// @brief The swapchain buffers for the window.
+        const ::std::vector<VkFramebuffer>& vecSwapChainFrameBuffers = pairWindowToVecSwapChainFrameBuffers.second;
+        // Destroy frame buffers.
+        for (VkFramebuffer swapChainFrameBuffer : vecSwapChainFrameBuffers) {
+            vkDestroyFramebuffer(graphicsLogicalDevice, swapChainFrameBuffer, nullptr);
+        }
+    }
+    _mapWindowToVecSwapChainFrameBuffers.clear();
+    celeriqueLogTrace("Destroyed all frame buffers.");
+}
+
 /// @brief Destroy all render passes.
 void celerique::vulkan::internal::Manager::destroyRenderPasses() {
     for (const auto& pairWindowToRenderPass : _mapWindowToRenderPass) {
@@ -360,7 +401,7 @@ void celerique::vulkan::internal::Manager::destroySwapChainImageViews() {
         /// @brief The handle to the graphics logical device that created the swapchain.
         VkDevice graphicsLogicalDevice = _mapWindowToGraphicsLogicDev[windowHandle];
         /// @brief The vector of image views to be destroyed.
-        ::std::vector<VkImageView> vecSwapChainImageViews = pairWindowToVecSwapChainImageViews.second;
+        const ::std::vector<VkImageView>& vecSwapChainImageViews = pairWindowToVecSwapChainImageViews.second;
         // Iterate and destroy each.
         for (VkImageView swapChainImageView : vecSwapChainImageViews) {
             vkDestroyImageView(graphicsLogicalDevice, swapChainImageView, nullptr);
@@ -375,7 +416,7 @@ void celerique::vulkan::internal::Manager::destroySwapChainImageViews() {
 void celerique::vulkan::internal::Manager::destroySwapChains() {
     for (const auto& pairWindowToSwapchain : _mapWindowToSwapChain) {
         /// @brief The window handle.
-         Pointer windowHandle = pairWindowToSwapchain.first;;
+        Pointer windowHandle = pairWindowToSwapchain.first;
         /// @brief The handle to the graphics logical device that created the swapchain.
         VkDevice graphicsLogicalDevice = _mapWindowToGraphicsLogicDev[windowHandle];
         /// @brief The swapchain to be destroyed.
@@ -388,6 +429,24 @@ void celerique::vulkan::internal::Manager::destroySwapChains() {
     _mapWindowToSwapChainImageFormat.clear();
 
     celeriqueLogTrace("Destroyed swapchains.");
+}
+
+/// @brief Destroy all command pools.
+void celerique::vulkan::internal::Manager::destroyCommandPools() {
+    for (const auto& pairLogicDevToVecCommandPool : _mapLogicDevToVecCommandPools) {
+        /// @brief The handle to the logical device.
+        VkDevice logicalDevice = pairLogicDevToVecCommandPool.first;
+        /// @brief The handle to the command pool to be destroyed.
+        const ::std::vector<VkCommandPool>& vecCommandPool = pairLogicDevToVecCommandPool.second;
+        // Iterate and destroy each command pool.
+        for (VkCommandPool commandPool : vecCommandPool) {
+            // This also frees the command buffers that this pool created.
+            // No need to explicitly free the command buffers.
+            vkDestroyCommandPool(logicalDevice, commandPool, nullptr);
+        }
+    }
+    _mapLogicDevToVecCommandPools.clear();
+    celeriqueLogTrace("Destroyed command pools.");
 }
 
 /// @brief Destroys all logical devices.
@@ -403,6 +462,7 @@ void celerique::vulkan::internal::Manager::destroyLogicalDevices() {
 /// @brief Destroy the registered surfaces.
 void celerique::vulkan::internal::Manager::destroyRegisteredSurfaces() {
     for (const auto& pairWindowToSurface : _mapWindowToSurface) {
+        /// @brief The surface to be destroyed.
         VkSurfaceKHR surface = pairWindowToSurface.second;
         vkDestroySurfaceKHR(_vulkanInstance, surface, nullptr);
     }
@@ -609,9 +669,11 @@ VkDevice celerique::vulkan::internal::Manager::createGraphicsLogicalDevice(Point
     _vecGraphicsLogicDev.push_back(graphicsLogicalDevice);
     celeriqueLogTrace("Created graphics logical device.");
 
-    /// @brief The container for the window's graphics queues.
+    /// @brief The container for the graphics queues.
     ::std::vector<VkQueue> vecGraphicsQueues;
-    /// @brief The container for the window's present queues.
+    /// @brief The container for the graphicsCommandPool.
+    ::std::vector<VkCommandPool> vecCommandPools;
+    /// @brief The container for the present queues.
     ::std::vector<VkQueue> vecPresentQueues;
 
     /// @brief The unordered set containing queue family indices with graphics.
@@ -638,11 +700,31 @@ VkDevice celerique::vulkan::internal::Manager::createGraphicsLogicalDevice(Point
         if (setQueueFamIndicesPresent.find(queueFamilyIndex) != setQueueFamIndicesPresent.end()) {
             vecPresentQueues.push_back(queue);
         }
+
+        /// @brief The handle to the command pool.
+        VkCommandPool commandPool = nullptr;
+        /// @brief The information on how to create the command pool.
+        VkCommandPoolCreateInfo commandPoolInfo = {};
+        commandPoolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+        commandPoolInfo.queueFamilyIndex = queueFamilyIndex;
+        commandPoolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+        // Create the command pool.
+        result = vkCreateCommandPool(graphicsLogicalDevice, &commandPoolInfo, nullptr, &commandPool);
+        if (result != VK_SUCCESS) {
+            ::std::string errorMessage = "Failed to create command pool "
+            "with result " + ::std::to_string(result);
+            celeriqueLogError(errorMessage);
+            throw ::std::runtime_error(errorMessage);
+        }
+        vecCommandPools.push_back(commandPool);
     }
     _mapGraphicsLogicDevToVecGraphicsQueues[graphicsLogicalDevice] = ::std::move(vecGraphicsQueues);
     _mapGraphicsLogicDevToVecPresentQueues[graphicsLogicalDevice] = ::std::move(vecPresentQueues);
-
     celeriqueLogTrace("Retrieved necessary queues for rendering graphics.");
+
+    _mapLogicDevToVecCommandPools[graphicsLogicalDevice] = ::std::move(vecCommandPools);
+    celeriqueLogTrace("Created graphics command pools.");
+
     return graphicsLogicalDevice;
 }
 
@@ -839,7 +921,98 @@ void ::celerique::vulkan::internal::Manager::createRenderPass(Pointer windowHand
     }
     _mapWindowToRenderPass[windowHandle] = renderPass;
 
-    celeriqueLogTrace("Created a new render pass.");
+    celeriqueLogTrace("Created render pass.");
+}
+
+/// @brief Create the swapchain image views.
+/// @param windowHandle The UI protocol native pointer of the window to be registered.
+void ::celerique::vulkan::internal::Manager::createSwapChainFrameBuffers(Pointer windowHandle) {
+    /// @brief The container for the result code from the vulkan api.
+    VkResult result;
+
+    /// @brief The handle to the graphics logical device that created the swapchain.
+    VkDevice graphicsLogicalDevice = _mapWindowToGraphicsLogicDev[windowHandle];
+    /// @brief The swapchain image views of the window.
+    const ::std::vector<VkImageView>& vecSwapChainImageViews = _mapWindowToVecSwapChainImageViews[windowHandle];
+    /// @brief The swapchain frame buffers.
+    ::std::vector<VkFramebuffer> vecSwapChainFrameBuffers;
+    vecSwapChainFrameBuffers.reserve(vecSwapChainImageViews.size());
+
+    // Iterate over each swapchain image view and create a framebuffer.
+    for (VkImageView swapChainImageView : vecSwapChainImageViews) {
+        /// @brief The image view the framebuffer is attaching to.
+        VkImageView attachments[] = {swapChainImageView};
+
+        /// @brief The information about the framebuffer to be created.
+        VkFramebufferCreateInfo frameBufferInfo = {};
+        frameBufferInfo.sType = VkStructureType
+            ::VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+        frameBufferInfo.renderPass = _mapWindowToRenderPass[windowHandle];
+        frameBufferInfo.width = _mapWindowToSwapChainExtent[windowHandle].width;
+        frameBufferInfo.height = _mapWindowToSwapChainExtent[windowHandle].height;
+        frameBufferInfo.layers = 1;
+        frameBufferInfo.attachmentCount = 1;
+        frameBufferInfo.pAttachments = attachments;
+
+        /// @brief The framebuffer to be created.
+        VkFramebuffer frameBuffer;
+        // Create the framebuffer.
+        result = vkCreateFramebuffer(graphicsLogicalDevice, &frameBufferInfo, nullptr, &frameBuffer);
+        if (result != VK_SUCCESS) {
+            ::std::string errorMessage = "Failed to create swapchain frame buffer "
+            "with result code: " + ::std::to_string(result);
+            celeriqueLogError(errorMessage);
+            throw ::std::runtime_error(errorMessage);
+        }
+        vecSwapChainFrameBuffers.emplace_back(::std::move(frameBuffer));
+    }
+
+    _mapWindowToVecSwapChainFrameBuffers[windowHandle] = ::std::move(vecSwapChainFrameBuffers);
+    celeriqueLogTrace("Created swapchain frame buffers.");
+}
+
+/// @brief Create the command buffers for the window.
+/// @param windowHandle The UI protocol native pointer of the window to be registered.
+void celerique::vulkan::internal::Manager::createCommandBuffers(Pointer windowHandle) {
+    /// @brief The container for the result code from the vulkan api.
+    VkResult result;
+
+    /// @brief The number of command buffers.
+    size_t numOfCommandBuffers = _mapWindowToVecSwapChainFrameBuffers[windowHandle].size();
+    /// @brief The assigned graphics logical device for the window.
+    VkDevice graphicsLogicalDevice = _mapWindowToGraphicsLogicDev[windowHandle];
+    /// @brief The vector of command buffers.
+    ::std::vector<VkCommandBuffer> vecCommandBuffers;
+    vecCommandBuffers.reserve(numOfCommandBuffers);
+
+    /// @brief The graphics command pool used to create the command buffers.
+    VkCommandPool graphicsCommandPool = _mapLogicDevToVecCommandPools[graphicsLogicalDevice][0];
+    // TODO: Properly assign the command pool for the window. We'll use the first one for now.
+
+    for (size_t i = 0; i < numOfCommandBuffers; i++) {
+        /// @brief The information regarding how the command buffer is allocated.
+        VkCommandBufferAllocateInfo commandBufferInfo = {};
+        commandBufferInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+        commandBufferInfo.commandPool = graphicsCommandPool;
+        commandBufferInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+        commandBufferInfo.commandBufferCount = 1;
+
+        /// @brief The command buffer handle to be allocated.
+        VkCommandBuffer commandBuffer = nullptr;
+        // Allocate command buffer.
+        result = vkAllocateCommandBuffers(graphicsLogicalDevice, &commandBufferInfo, &commandBuffer);
+        if (result != VK_SUCCESS) {
+            ::std::string errorMessage = "Failed to create command buffer "
+            "with result code: " + ::std::to_string(result);
+            celeriqueLogError(errorMessage);
+            throw ::std::runtime_error(errorMessage);
+        }
+        vecCommandBuffers.push_back(commandBuffer);
+    }
+
+    _mapWindowToGraphicsCommandPool[windowHandle] = graphicsCommandPool;
+    _mapWindowToVecCommandBuffers[windowHandle] = ::std::move(vecCommandBuffers);
+    celeriqueLogTrace("Created command buffers.");
 }
 
 /// @brief Choose the swapchain best image format out of the specified surface format.

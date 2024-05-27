@@ -64,12 +64,16 @@ namespace celerique { namespace vulkan { namespace internal {
 
     // Resource cleanup.
     private:
+        /// @brief Destroy all swapchain frame buffers.
+        void destroySwapChainFrameBuffers();
         /// @brief Destroy all render passes.
         void destroyRenderPasses();
         /// @brief Destroy swapchain image views.
         void destroySwapChainImageViews();
         /// @brief Destroy all swapchain objects.
         void destroySwapChains();
+        /// @brief Destroy all command pools.
+        void destroyCommandPools();
         /// @brief Destroys all logical devices.
         void destroyLogicalDevices();
         /// @brief Destroy the registered surfaces.
@@ -102,6 +106,12 @@ namespace celerique { namespace vulkan { namespace internal {
         /// @brief Create the render pass for windows implemented in the specified UI protocol.
         /// @param windowHandle The UI protocol native pointer of the window to be registered.
         void createRenderPass(Pointer windowHandle);
+        /// @brief Create the swapchain image views.
+        /// @param windowHandle The UI protocol native pointer of the window to be registered.
+        void createSwapChainFrameBuffers(Pointer windowHandle);
+        /// @brief Create the command buffers for the window.
+        /// @param windowHandle The UI protocol native pointer of the window to be registered.
+        void createCommandBuffers(Pointer windowHandle);
 
     // Swapchain helper functions.
     private:
@@ -216,22 +226,30 @@ namespace celerique { namespace vulkan { namespace internal {
         ::std::unordered_map<Pointer, VkSurfaceKHR> _mapWindowToSurface;
         /// @brief The collection of graphics logical devices used.
         ::std::vector<VkDevice> _vecGraphicsLogicDev;
+        /// @brief The map of a logical device to its command pools.
+        ::std::unordered_map<VkDevice, ::std::vector<VkCommandPool>> _mapLogicDevToVecCommandPools;
         /// @brief The map of a window to its associated graphics logical device.
         ::std::unordered_map<Pointer, VkDevice> _mapWindowToGraphicsLogicDev;
         /// @brief The map of a graphics logical device to its graphics queues.
         ::std::unordered_map<VkDevice, ::std::vector<VkQueue>> _mapGraphicsLogicDevToVecGraphicsQueues;
         /// @brief The map of a graphics logical device to its present queues.
         ::std::unordered_map<VkDevice, ::std::vector<VkQueue>> _mapGraphicsLogicDevToVecPresentQueues;
-        /// @brief The map of window to its swapchain.
-        ::std::unordered_map<Pointer, VkSwapchainKHR> _mapWindowToSwapChain;
         /// @brief The map of a window to its swapchain image format.
         ::std::unordered_map<Pointer, VkFormat> _mapWindowToSwapChainImageFormat;
         /// @brief The map of a window to the extent description of its swapchain.
         ::std::unordered_map<Pointer, VkExtent2D> _mapWindowToSwapChainExtent;
+        /// @brief The map of window to its swapchain.
+        ::std::unordered_map<Pointer, VkSwapchainKHR> _mapWindowToSwapChain;
         /// @brief The map of a window to the swapchain image views.
         ::std::unordered_map<Pointer, ::std::vector<VkImageView>> _mapWindowToVecSwapChainImageViews;
         /// @brief The map of a window to its render pass.
         ::std::unordered_map<Pointer, VkRenderPass> _mapWindowToRenderPass;
+        /// @brief The map of a window to its swapchain frame buffers.
+        ::std::unordered_map<Pointer, ::std::vector<VkFramebuffer>> _mapWindowToVecSwapChainFrameBuffers;
+        /// @brief The map of a window to its assigned graphics command pool.
+        ::std::unordered_map<Pointer, VkCommandPool> _mapWindowToGraphicsCommandPool;
+        /// @brief The map of a window to its command buffers.
+        ::std::unordered_map<Pointer, ::std::vector<VkCommandBuffer>> _mapWindowToVecCommandBuffers;
 
         // Validation layer objects.
 #if defined(CELERIQUE_DEBUG_MODE)
