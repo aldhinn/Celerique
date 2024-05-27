@@ -59,6 +59,7 @@ typedef uintptr_t CeleriquePipelineConfigID;
 #if defined(__cplusplus)
 #include <unordered_map>
 #include <string>
+#include <vector>
 
 namespace celerique {
     /// @brief The type of the pipeline configuration unique identifier.
@@ -139,6 +140,8 @@ namespace celerique {
         /// @param stage The shader stage specified.
         /// @return The reference to the shader program container.
         ShaderProgram& shaderProgram(ShaderStage stage);
+        /// @return The shader stages defined in this pipeline configuration.
+        ::std::vector<ShaderStage> vecStages() const;
 
     protected:
         /// @brief The map of shader stages to their corresponding shader programs.

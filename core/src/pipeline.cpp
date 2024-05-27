@@ -117,3 +117,16 @@ _mapShaderStageToShaderProgram(::std::move(mapShaderStageToShaderProgram)) {}
 ::celerique::ShaderProgram& celerique::PipelineConfig::shaderProgram(ShaderStage stage) {
     return _mapShaderStageToShaderProgram[stage];
 }
+
+/// @return The shader stages defined in this pipeline configuration.
+::std::vector<::celerique::ShaderStage> celerique::PipelineConfig::vecStages() const {
+    /// @brief The container for the collection of shader stages.
+    ::std::vector<ShaderStage> vecStages;
+    for (const auto& pairShaderStageToShaderProgram : _mapShaderStageToShaderProgram) {
+        /// @brief The shader stage value.
+        ShaderStage shaderStage = pairShaderStageToShaderProgram.first;
+        // Collect the shader stage.
+        vecStages.push_back(shaderStage);
+    }
+    return vecStages;
+}
