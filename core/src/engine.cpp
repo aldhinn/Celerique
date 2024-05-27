@@ -36,22 +36,21 @@ void ::celerique::internal::Engine::onUpdate(::std::shared_ptr<IUpdateData> ptrU
 /// @param ptrEvent The shared pointer to the event being dispatched.
 void ::celerique::internal::Engine::onEvent(::std::shared_ptr<Event> ptrEvent) {
     EventDispatcher dispatcher(ptrEvent);
+    dispatcher.dispatch<::celerique::event::EngineShutdown>(
+        ::std::bind(&Engine::onEngineShutdown, this, ptrEvent), CELERIQUE_EVENT_HANDLING_STRATEGY_BLOCKING
+    );
     {
         ::std::shared_lock<::std::shared_mutex> readLock(_layerMutex);
 
         // Dispatch input and window events to layers (from last to first).
         for (auto layerRIterator = _vecPtrAppLayers.rbegin(); layerRIterator != _vecPtrAppLayers.rend() &&
-        (ptrEvent->category() & (CELERIQUE_EVENT_CATEGORY_WINDOW | CELERIQUE_EVENT_CATEGORY_INPUT)) != 0;
-        layerRIterator++) {
+        (ptrEvent->category() & (CELERIQUE_EVENT_CATEGORY_WINDOW | CELERIQUE_EVENT_CATEGORY_INPUT)) != 0 &&
+        ptrEvent->shouldPropagate(); layerRIterator++) {
             dispatcher.dispatch<::celerique::Event>(
                 ::std::bind(&IApplicationLayer::onEvent, (*layerRIterator).get(), ptrEvent), CELERIQUE_EVENT_HANDLING_STRATEGY_BLOCKING
             );
-            if (!ptrEvent->shouldPropagate()) break;
         }
     }
-    dispatcher.dispatch<::celerique::event::EngineShutdown>(
-        ::std::bind(&Engine::onEngineShutdown, this, ptrEvent), CELERIQUE_EVENT_HANDLING_STRATEGY_BLOCKING
-    );
 }
 
 /// @brief Add an application layer to be managed by the engine.
@@ -108,6 +107,7 @@ void ::celerique::internal::Engine::run() {
 /// @param ptrEvent The shared pointer to the event being dispatched.
 void ::celerique::internal::Engine::onEngineShutdown(::std::shared_ptr<Event> ptrEvent) {
     _atomicShouldAppLoopRunning.store(false);
+    ptrEvent->completePropagation();
     celeriqueLogTrace("Engine shutdown event was dispatched.");
 }
 
