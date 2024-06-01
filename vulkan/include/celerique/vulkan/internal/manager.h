@@ -39,8 +39,19 @@ namespace celerique { namespace vulkan { namespace internal {
 
         /// @brief Add a graphics pipeline.
         /// @param ptrGraphicsPipelineConfig The pointer to the graphics pipeline configuration.
+        /// @param currentId The current id of the pipeline config ID to be mapped.
         /// @return The unique identifier to the graphics pipeline configuration that was just added.
-        void addGraphicsPipeline(PipelineConfig* ptrGraphicsPipelineConfig);
+        void addGraphicsPipeline(PipelineConfig* ptrGraphicsPipelineConfig, PipelineConfigID currentId);
+        /// @brief Remove the graphics pipeline specified.
+        /// @param graphicsPipelineConfigId The identifier of the graphics pipeline configuration to be removed.
+        void removeGraphicsPipeline(PipelineConfigID graphicsPipelineConfigId);
+        /// @brief Clear the collection of graphics pipelines.
+        void clearGraphicsPipelines();
+        
+        /// @brief Graphics draw call.
+        /// @param graphicsPipelineConfigId The identifier for the graphics pipeline configuration to be used for drawing.
+        void draw(PipelineConfigID graphicsPipelineConfigId);
+
         /// @brief Add the window handle to the graphics API.
         /// @param uiProtocol The UI protocol used to create UI elements.
         /// @param windowHandle The handle to the window according to UI protocol.

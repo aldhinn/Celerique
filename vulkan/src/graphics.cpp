@@ -37,8 +37,26 @@ License: Mozilla Public License 2.0. (See ./LICENSE).
 ::celerique::PipelineConfigID celerique::vulkan::internal::GraphicsAPI::addGraphicsPipelineConfig(
     ::std::unique_ptr<PipelineConfig>&& ptrGraphicsPipelineConfig
 ) {
-    refManager.addGraphicsPipeline(ptrGraphicsPipelineConfig.get());
+    /// @brief The current id of the pipeline config ID to be mapped.
+    PipelineConfigID currentId = _nextGraphicsPipelineConfigId;
+    refManager.addGraphicsPipeline(ptrGraphicsPipelineConfig.get(), currentId);
     return IGraphicsAPI::addGraphicsPipelineConfig(::std::move(ptrGraphicsPipelineConfig));
+}
+
+/// @brief Remove the graphics pipeline configuration specified.
+/// @param graphicsPipelineConfigId The identifier of the graphics pipeline configuration to be removed.
+void ::celerique::vulkan::internal::GraphicsAPI::removeGraphicsPipelineConfig(PipelineConfigID graphicsPipelineConfigId) {
+    refManager.removeGraphicsPipeline(graphicsPipelineConfigId);
+    IGraphicsAPI::removeGraphicsPipelineConfig(graphicsPipelineConfigId);
+}
+
+/// @brief Clear the collection of graphics pipeline configurations.
+void ::celerique::vulkan::internal::GraphicsAPI::clearGraphicsPipelineConfigs() {}
+
+/// @brief Graphics draw call.
+/// @param graphicsPipelineConfigId The identifier for the graphics pipeline configuration to be used for drawing.
+void ::celerique::vulkan::internal::GraphicsAPI::draw(PipelineConfigID graphicsPipelineConfigId) {
+    // TODO: Implement.
 }
 
 /// @brief Add the window handle to the graphics API.

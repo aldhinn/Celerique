@@ -21,6 +21,7 @@ namespace celerique {
     public:
         MOCK_METHOD2(addWindow, void(UiProtocol, Pointer));
         MOCK_METHOD1(removeWindow, void(Pointer));
+        MOCK_METHOD1(draw, void(PipelineConfigID));
     };
     /// @brief A mock implementation of an interface to a graphical user interface window.
     class MockWindow : public IWindow {
@@ -79,16 +80,8 @@ namespace celerique {
         MockGraphicsApi mockGraphicsApi;
 
         GTEST_ASSERT_EQ(mockGraphicsApi.addGraphicsPipelineConfig(::std::make_unique<PipelineConfig>()), 0);
-    }
-
-    TEST_F(GraphicsUnitTestCpp, resetBringsGraphicsPipelineConfigIdBackTo0) {
-        /// @brief Mock graphics API instance.
-        MockGraphicsApi mockGraphicsApi;
-
-        // Normal result.
-        GTEST_ASSERT_EQ(mockGraphicsApi.addGraphicsPipelineConfig(::std::make_unique<PipelineConfig>()), 0);
-
-        mockGraphicsApi.resetGraphicsPipelineConfigs();
+        // Reset.
+        mockGraphicsApi.clearGraphicsPipelineConfigs();
         // It should be back to 0.
         GTEST_ASSERT_EQ(mockGraphicsApi.addGraphicsPipelineConfig(::std::make_unique<PipelineConfig>()), 0);
     }
@@ -121,7 +114,7 @@ namespace celerique {
         }
     }
 
-    TEST_F(GraphicsUnitTestCpp, verifyShaderSrcParsing) {
+    TEST_F(GraphicsUnitTestCpp, verifyShaderSrcExtensionParsing) {
         GTEST_ASSERT_EQ(fileExtToShaderSrcLang("some/file"), CELERIQUE_SHADER_SRC_LANG_NULL);
         GTEST_ASSERT_EQ(fileExtToShaderSrcLang("some/file.cpp.glsl"), CELERIQUE_SHADER_SRC_LANG_GLSL);
         GTEST_ASSERT_EQ(fileExtToShaderSrcLang("some/file.glsl."), CELERIQUE_SHADER_SRC_LANG_NULL);

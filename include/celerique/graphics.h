@@ -31,6 +31,7 @@ typedef uint8_t CeleriqueUiProtocol;
 
 // Begin C++ Only Region.
 #if defined(__cplusplus)
+#include <unordered_map>
 #include <vector>
 #include <memory>
 #include <string>
@@ -75,11 +76,15 @@ namespace celerique {
         virtual PipelineConfigID addGraphicsPipelineConfig(
             ::std::unique_ptr<PipelineConfig>&& ptrGraphicsPipelineConfig
         );
-        /// @brief Set the graphics pipeline configuration to be used for graphics rendering.
-        /// @param graphicsPipelineConfigId The specified identifier of the graphics pipeline config.
-        virtual void setGraphicsPipelineConfig(PipelineConfigID graphicsPipelineConfigId);
-        /// @brief Reset the graphics pipeline configs vector.
-        virtual void resetGraphicsPipelineConfigs();
+        /// @brief Remove the graphics pipeline configuration specified.
+        /// @param graphicsPipelineConfigId The identifier of the graphics pipeline configuration to be removed.
+        virtual void removeGraphicsPipelineConfig(PipelineConfigID graphicsPipelineConfigId);
+        /// @brief Clear the collection of graphics pipeline configurations.
+        virtual void clearGraphicsPipelineConfigs();
+
+        /// @brief Graphics draw call.
+        /// @param graphicsPipelineConfigId The identifier for the graphics pipeline configuration to be used for drawing.
+        virtual void draw(PipelineConfigID graphicsPipelineConfigId) = 0;
 
         /// @brief Add the window handle to the graphics API.
         /// @param uiProtocol The UI protocol used to create UI elements.
@@ -91,10 +96,8 @@ namespace celerique {
 
     // Protected member variables.
     protected:
-        /// @brief The vector of unique pointers to graphics pipeline configurations.
-        ::std::vector<::std::unique_ptr<PipelineConfig>> _vecPtrGraphicsPipelineConfig;
-        /// @brief The identifier to the current graphics pipeline being used for rendering graphics.
-        PipelineConfigID _currentGraphicsPipelineConfigUsed = 0;
+        /// @brief The map of config identifiers to the unique pointers to graphics pipeline configurations.
+        ::std::unordered_map<PipelineConfigID, ::std::unique_ptr<PipelineConfig>> _mapIdToPtrGraphicsPipelineConfig;
         /// @brief The value of the next graphics pipeline config identifier value.
         PipelineConfigID _nextGraphicsPipelineConfigId = 0;
 

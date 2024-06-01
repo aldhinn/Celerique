@@ -49,11 +49,34 @@ celerique::vulkan::internal::Manager& celerique::vulkan::internal::Manager::getR
     return instance;
 }
 
-/// @brief Add a graphics pipeline configuration.
+/// @brief Add a graphics pipeline.
 /// @param ptrGraphicsPipelineConfig The pointer to the graphics pipeline configuration.
+/// @param currentId The current id of the pipeline config ID to be mapped.
 /// @return The unique identifier to the graphics pipeline configuration that was just added.
-void ::celerique::vulkan::internal::Manager::addGraphicsPipeline(PipelineConfig* ptrGraphicsPipelineConfig) {
+void ::celerique::vulkan::internal::Manager::addGraphicsPipeline(
+    PipelineConfig* ptrGraphicsPipelineConfig, PipelineConfigID currentId
+) {
     ::std::unique_lock<::std::shared_mutex> writeLock(_sharedMutex);
+    // TODO: Implement.
+}
+
+/// @brief Remove the graphics pipeline specified.
+/// @param graphicsPipelineConfigId The identifier of the graphics pipeline configuration to be removed.
+void ::celerique::vulkan::internal::Manager::removeGraphicsPipeline(PipelineConfigID graphicsPipelineConfigId) {
+    ::std::unique_lock<::std::shared_mutex> writeLock(_sharedMutex);
+    // TODO: Implement.
+}
+
+/// @brief Clear the collection of graphics pipelines.
+void ::celerique::vulkan::internal::Manager::clearGraphicsPipelines() {
+    ::std::unique_lock<::std::shared_mutex> writeLock(_sharedMutex);
+    // TODO: Implement.
+}
+
+/// @brief Graphics draw call.
+/// @param graphicsPipelineConfigId The identifier for the graphics pipeline configuration to be used for drawing.
+void ::celerique::vulkan::internal::Manager::draw(PipelineConfigID graphicsPipelineConfigId) {
+    ::std::shared_lock<::std::shared_mutex> readLock(_sharedMutex);
     // TODO: Implement.
 }
 

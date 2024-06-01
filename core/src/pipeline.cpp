@@ -111,11 +111,19 @@ _ptrBuffer(other._ptrBuffer) {
 ::celerique::PipelineConfig::PipelineConfig(::std::unordered_map<ShaderStage, ShaderProgram>&& mapShaderStageToShaderProgram) :
 _mapShaderStageToShaderProgram(::std::move(mapShaderStageToShaderProgram)) {}
 
+/// @brief A shader program container that contains no shader.
+static ::celerique::ShaderProgram emptyShaderProgram(0, nullptr);
+
 /// @brief Access the shader program of a particular shader stage.
 /// @param stage The shader stage specified.
 /// @return The reference to the shader program container.
 ::celerique::ShaderProgram& celerique::PipelineConfig::shaderProgram(ShaderStage stage) {
-    return _mapShaderStageToShaderProgram[stage];
+    /// @brief The iterator for the particular shader stage to shader program pair.
+    auto iteratorShaderProgram = _mapShaderStageToShaderProgram.find(stage);
+    // Return the empty shader program reference if no shader program is paired with a particular shader stage.
+    if (iteratorShaderProgram == _mapShaderStageToShaderProgram.end())
+        return emptyShaderProgram;
+    return (*iteratorShaderProgram).second;
 }
 
 /// @return The shader stages defined in this pipeline configuration.
