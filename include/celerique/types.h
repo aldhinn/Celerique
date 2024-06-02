@@ -27,7 +27,7 @@ typedef uintptr_t CeleriquePointer;
 /// @brief The type for the number of pixel units in the screen.
 typedef int32_t CeleriquePixelUnits;
 /// @brief Type for a byte character.
-typedef uint8_t CeleriqueByte;
+typedef char CeleriqueByte;
 /// @brief A value of this type describes the size of a stack allocated array.
 typedef uint8_t CeleriqueArraySize;
 

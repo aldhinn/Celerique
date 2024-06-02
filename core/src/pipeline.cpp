@@ -17,7 +17,7 @@ License: Mozilla Public License 2.0. (See ./LICENSE).
 /// @param binaryPath The file path of the binary where the shader is to be loaded from.
 /// @return The loaded shader container instance.
 ::celerique::ShaderProgram celerique::loadShaderProgram(const ::std::string& binaryPath) {
-/// @brief The input stream of the binary file.
+    /// @brief The input stream of the binary file.
     ::std::basic_ifstream<::celerique::Byte> streamBinaryFile(binaryPath, ::std::ios::binary);
     if (!streamBinaryFile.is_open()) {
         celeriqueLogWarning("Failed to open shader file.");
