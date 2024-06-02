@@ -66,6 +66,7 @@ if (NOT TARGET CeleriqueEngineVulkanPlugin)
     if (BuildCeleriqueEngineVulkanPluginUnitTestingCpp OR PROJECT_IS_TOP_LEVEL)
         enable_testing()
         find_package(GTest QUIET)
+        find_program(GLSLC_EXE glslc)
 
         if (NOT GTest_FOUND)
             FetchContent_Declare(
@@ -117,5 +118,38 @@ if (NOT TARGET CeleriqueEngineVulkanPlugin)
             ${CMAKE_CURRENT_SOURCE_DIR}/include ${Vulkan_INCLUDE_DIR}
         )
         gtest_discover_tests(CeleriqueEngineVulkanPluginUnitTestingCpp)
+
+        # Compile test triangle shaders.
+        exec_program(${GLSLC_EXE} ARGS
+            ${CMAKE_CURRENT_SOURCE_DIR}/tests/triangle.vert -o
+            ${CMAKE_CURRENT_SOURCE_DIR}/tests/triangle.vert.spv -O
+            --target-env=vulkan1.3
+        )
+        exec_program(${GLSLC_EXE} ARGS
+            ${CMAKE_CURRENT_SOURCE_DIR}/tests/triangle.frag -o
+            ${CMAKE_CURRENT_SOURCE_DIR}/tests/triangle.frag.spv -O
+            --target-env=vulkan1.3
+        )
+
+        # Drawing triangle testing.
+        add_executable(
+            CeleriqueEngineVulkanPluginTriangleTesting
+            ${CMAKE_CURRENT_SOURCE_DIR}/tests/triangle.cpp
+        )
+        target_link_libraries(
+            CeleriqueEngineVulkanPluginTriangleTesting PUBLIC
+            CeleriqueEngineCore CeleriqueEngineVulkanPlugin
+        )
+        if (WIN32)
+            target_link_libraries(
+                CeleriqueEngineVulkanPluginTriangleTesting PUBLIC
+                CeleriqueEngineWin32Plugin
+            )
+        else()
+            target_link_libraries(
+                CeleriqueEngineVulkanPluginTriangleTesting PUBLIC
+                CeleriqueEngineX11Plugin
+            )
+        endif()
     endif()
 endif()
