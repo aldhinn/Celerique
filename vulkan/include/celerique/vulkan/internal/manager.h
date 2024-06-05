@@ -47,7 +47,7 @@ namespace celerique { namespace vulkan { namespace internal {
         void removeGraphicsPipeline(PipelineConfigID graphicsPipelineConfigId);
         /// @brief Clear the collection of graphics pipelines.
         void clearGraphicsPipelines();
-        
+
         /// @brief Graphics draw call.
         /// @param graphicsPipelineConfigId The identifier for the graphics pipeline configuration to be used for drawing.
         void draw(PipelineConfigID graphicsPipelineConfigId);
@@ -75,10 +75,14 @@ namespace celerique { namespace vulkan { namespace internal {
 
     // Resource cleanup.
     private:
+        /// @brief Destroy all sync objects.
+        void destroySyncObjects();
+        /// @brief Destroy all pipeline related objects.
+        void destroyPipelines();
         /// @brief Destroy all swapchain frame buffers.
         void destroySwapChainFrameBuffers();
         /// @brief Destroy all render passes.
-        void destroyRenderPasses();
+        void destroyRenderPass();
         /// @brief Destroy swapchain image views.
         void destroySwapChainImageViews();
         /// @brief Destroy all swapchain objects.
@@ -123,6 +127,9 @@ namespace celerique { namespace vulkan { namespace internal {
         /// @brief Create the command buffers for the window.
         /// @param windowHandle The UI protocol native pointer of the window to be registered.
         void createCommandBuffers(Pointer windowHandle);
+        /// @brief Create synchronization objects.
+        /// @param windowHandle The UI protocol native pointer of the window to be registered.
+        void createSyncObjects(Pointer windowHandle);
 
     // Swapchain helper functions.
     private:
@@ -144,6 +151,21 @@ namespace celerique { namespace vulkan { namespace internal {
         /// @param surfaceCapabilities The surface capabilities structure.
         /// @return The minimum image count appropriate
         uint32_t determineMinImageCount(const VkSurfaceCapabilitiesKHR& surfaceCapabilities);
+
+    // Draw helper functions.
+    private:
+        /// @brief Draw graphics to a window.
+        /// @param windowHandle The handle to the window to be drawn graphics on.
+        /// @param graphicsPipelineConfigId The identifier for the graphics pipeline configuration to be used for drawing.
+        void drawOnWindow(Pointer windowHandle, PipelineConfigID graphicsPipeline);
+
+    // Pipeline helper functions.
+    private:
+        /// @brief Construct a collection shader stage create information structures.
+        /// @param logicalDevice The handle to the logical device that is used to create the pipeline.
+        /// @param ptrPipelineConfig The pointer to the pipeline configuration.
+        /// @return The collection of vulkan pipeline shader stages.
+        ::std::vector<VkPipelineShaderStageCreateInfo> constructVecShaderStageCreateInfos(VkDevice logicalDevice, PipelineConfig* ptrPipelineConfig);
 
     // Helper functions.
     public:
@@ -215,7 +237,7 @@ namespace celerique { namespace vulkan { namespace internal {
         void destroyDebugMessenger();
 #endif
 
-    // Private member variables.
+    // Common vulkan resources and settings.
     private:
         /// @brief The shared mutex object for creating read and write locks.
         ::std::shared_mutex _sharedMutex;
@@ -227,42 +249,72 @@ namespace celerique { namespace vulkan { namespace internal {
         };
         /// @brief The handle to the vulkan instance.
         VkInstance _vulkanInstance = nullptr;
-        /// @brief The list of all available physical devices.
-        ::std::vector<VkPhysicalDevice> _vecAvailablePhysDev;
         /// @brief The list of required device extensions for the engine's purposes.
         ::std::vector<const char*> _vecRequiredDeviceExtensions = {
             VK_KHR_SWAPCHAIN_EXTENSION_NAME
         };
-        /// @brief The map of a window to a vulkan surface instance.
-        ::std::unordered_map<Pointer, VkSurfaceKHR> _mapWindowToSurface;
+
+    // Device resources.
+    private:
+        /// @brief The list of all available physical devices.
+        ::std::vector<VkPhysicalDevice> _vecAvailablePhysDev;
         /// @brief The collection of graphics logical devices used.
         ::std::vector<VkDevice> _vecGraphicsLogicDev;
         /// @brief The map of a logical device to its command pools.
         ::std::unordered_map<VkDevice, ::std::vector<VkCommandPool>> _mapLogicDevToVecCommandPools;
-        /// @brief The map of a window to its associated graphics logical device.
-        ::std::unordered_map<Pointer, VkDevice> _mapWindowToGraphicsLogicDev;
         /// @brief The map of a graphics logical device to its graphics queues.
         ::std::unordered_map<VkDevice, ::std::vector<VkQueue>> _mapGraphicsLogicDevToVecGraphicsQueues;
         /// @brief The map of a graphics logical device to its present queues.
         ::std::unordered_map<VkDevice, ::std::vector<VkQueue>> _mapGraphicsLogicDevToVecPresentQueues;
+        /// @brief The render pass instance paired with its logical device creator.
+        ::std::pair<VkRenderPass, VkDevice> _pairRenderPassToLogicDev;
+
+    // Maps of window handles to vulkan resources.
+    private:
+        /// @brief The map of a window to a vulkan surface instance.
+        ::std::unordered_map<Pointer, VkSurfaceKHR> _mapWindowToSurface;
+        /// @brief The map of a window to its associated graphics logical device.
+        ::std::unordered_map<Pointer, VkDevice> _mapWindowToGraphicsLogicDev;
         /// @brief The map of a window to its swapchain image format.
         ::std::unordered_map<Pointer, VkFormat> _mapWindowToSwapChainImageFormat;
         /// @brief The map of a window to the extent description of its swapchain.
         ::std::unordered_map<Pointer, VkExtent2D> _mapWindowToSwapChainExtent;
         /// @brief The map of window to its swapchain.
         ::std::unordered_map<Pointer, VkSwapchainKHR> _mapWindowToSwapChain;
+        /// @brief The map of a window to the swapchain images.
+        ::std::unordered_map<Pointer, ::std::vector<VkImage>> _mapWindowToVecSwapChainImages;
         /// @brief The map of a window to the swapchain image views.
         ::std::unordered_map<Pointer, ::std::vector<VkImageView>> _mapWindowToVecSwapChainImageViews;
-        /// @brief The map of a window to its render pass.
-        ::std::unordered_map<Pointer, VkRenderPass> _mapWindowToRenderPass;
         /// @brief The map of a window to its swapchain frame buffers.
         ::std::unordered_map<Pointer, ::std::vector<VkFramebuffer>> _mapWindowToVecSwapChainFrameBuffers;
         /// @brief The map of a window to its assigned graphics command pool.
         ::std::unordered_map<Pointer, VkCommandPool> _mapWindowToGraphicsCommandPool;
         /// @brief The map of a window to its command buffers.
         ::std::unordered_map<Pointer, ::std::vector<VkCommandBuffer>> _mapWindowToVecCommandBuffers;
+        /// @brief The map of a window to the current frame index that it is rendering.
+        ::std::unordered_map<Pointer, size_t> _mapWindowToCurrentFrameIndex;
+        /// @brief The map of a window to its image available semaphores.
+        ::std::unordered_map<Pointer, ::std::vector<VkSemaphore>> _mapWindowToVecImageAvailableSemaphores;
+        /// @brief The map of a window to its render finished semaphores.
+        ::std::unordered_map<Pointer, ::std::vector<VkSemaphore>> _mapWindowToVecRenderFinishedSemaphores;
+        /// @brief The map of a window to its in-flight fences.
+        ::std::unordered_map<Pointer, ::std::vector<VkFence>> _mapWindowToVecInFlightFences;
 
-        // Validation layer objects.
+    // Pipeline resources.
+    private:
+        /// @brief The map of a graphics pipeline identifier to its vulkan pipeline layout.
+        ::std::unordered_map<PipelineConfigID, VkPipelineLayout> _mapGraphicsPipelineIdToPipelineLayout;
+        /// @brief The map of a graphics pipeline identifier to its vulkan pipelines.
+        ::std::unordered_map<PipelineConfigID, VkPipeline> _mapGraphicsPipelineIdToPipeline;
+        /// @brief The map of a logical device to the shader modules it created.
+        ::std::unordered_map<VkDevice, ::std::vector<VkShaderModule>> _mapLogicDevToVecShaderModules;
+        /// @brief The map of a logical device to the pipeline layouts it created.
+        ::std::unordered_map<VkDevice, ::std::vector<VkPipelineLayout>> _mapLogicDevToVecPipelineLayouts;
+        /// @brief The map of a logical device to the pipelines it created.
+        ::std::unordered_map<VkDevice, ::std::vector<VkPipeline>> _mapLogicDevToVecPipelines;
+
+    // Validation layer objects.
+    private:
 #if defined(CELERIQUE_DEBUG_MODE)
         /// @brief The debug messenger handle.
         VkDebugUtilsMessengerEXT _debugMessenger = nullptr;

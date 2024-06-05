@@ -32,18 +32,14 @@ namespace celerique {
 
         /// @brief Default constructor.
         TriangleApp() : _ptrVulkanApi(vulkan::getGraphicsApiInterface()) {
-            /// @brief The vertex shader program container.
-            ShaderProgram vertexShader = loadShaderProgram(
-                CELERIQUE_REPO_ROOT_DIR "/vulkan/tests/triangle.vert.spv"
-            );
-            /// @brief The fragment shader program container.
-            ShaderProgram fragmentShader = loadShaderProgram(
-                CELERIQUE_REPO_ROOT_DIR "/vulkan/tests/triangle.frag.spv"
-            );
             /// @brief Map of shader stages to their shader programs.
             ::std::unordered_map<ShaderStage, ShaderProgram> mapShaderStageToShaderProgram;
-            mapShaderStageToShaderProgram[CELERIQUE_SHADER_STAGE_VERTEX] = ::std::move(vertexShader);
-            mapShaderStageToShaderProgram[CELERIQUE_SHADER_STAGE_FRAGMENT] = ::std::move(fragmentShader);
+            mapShaderStageToShaderProgram[CELERIQUE_SHADER_STAGE_VERTEX] = loadShaderProgram(
+                CELERIQUE_REPO_ROOT_DIR "/vulkan/tests/triangle.vert.spv"
+            );
+            mapShaderStageToShaderProgram[CELERIQUE_SHADER_STAGE_FRAGMENT] = loadShaderProgram(
+                CELERIQUE_REPO_ROOT_DIR "/vulkan/tests/triangle.frag.spv"
+            );
 
             _triangleGraphicsPipelineId = _ptrVulkanApi->addGraphicsPipelineConfig(
                 ::std::make_unique<PipelineConfig>(::std::move(mapShaderStageToShaderProgram))
@@ -66,12 +62,11 @@ int main(int argc, char** argv) {
     using ::celerique::win32::createWindow;
 #endif
 
-    ::celerique::addAppLayer(::std::make_unique<::celerique::TriangleApp>());
-
     ::std::unique_ptr<::celerique::IWindow> ptrWindow = createWindow(700, 500, "Triangle Application");
     ptrWindow->useGraphicsApi(::celerique::vulkan::getGraphicsApiInterface());
-
     ::celerique::addWindow(::std::move(ptrWindow));
+
+    ::celerique::addAppLayer(::std::make_unique<::celerique::TriangleApp>());
     ::celerique::run();
 
     return EXIT_SUCCESS;

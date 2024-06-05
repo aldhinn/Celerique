@@ -56,7 +56,7 @@ void ::celerique::vulkan::internal::GraphicsAPI::clearGraphicsPipelineConfigs() 
 /// @brief Graphics draw call.
 /// @param graphicsPipelineConfigId The identifier for the graphics pipeline configuration to be used for drawing.
 void ::celerique::vulkan::internal::GraphicsAPI::draw(PipelineConfigID graphicsPipelineConfigId) {
-    // TODO: Implement.
+    refManager.draw(graphicsPipelineConfigId);
 }
 
 /// @brief Add the window handle to the graphics API.

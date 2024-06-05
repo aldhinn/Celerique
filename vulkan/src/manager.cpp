@@ -16,6 +16,7 @@ License: Mozilla Public License 2.0. (See ./LICENSE).
 #include <unordered_set>
 #include <mutex>
 #include <algorithm>
+#include <thread>
 
 // Target platform defines for vulkan.
 #if (defined(CELERIQUE_FOR_LINUX_SYSTEMS) || defined(CELERIQUE_FOR_BSD_SYSTEMS)) && !defined(CELERIQUE_FOR_ANDROID)
@@ -57,7 +58,184 @@ void ::celerique::vulkan::internal::Manager::addGraphicsPipeline(
     PipelineConfig* ptrGraphicsPipelineConfig, PipelineConfigID currentId
 ) {
     ::std::unique_lock<::std::shared_mutex> writeLock(_sharedMutex);
-    // TODO: Implement.
+
+    /// @brief The handle to the graphics logical device.
+    VkDevice graphicsLogicalDevice = nullptr;
+
+    if (_mapWindowToSurface.size() == 0) {
+        const char* errorMessage = "addWindow should be called prior to adding a graphics pipeline.";
+        celeriqueLogFatal(errorMessage);
+        throw ::std::runtime_error(errorMessage);
+    }
+
+    // TODO: Properly select the best graphics logical device to use.
+    // will settle on the first one for now.
+    graphicsLogicalDevice = _vecGraphicsLogicDev[0];
+
+    /// @brief The iterator for the logical device and its pipeline layout vector.
+    auto iterLogicDevToVecPipelineLayouts = _mapLogicDevToVecPipelineLayouts.find(graphicsLogicalDevice);
+    // Initialize if it doesn't exist yet.
+    if (iterLogicDevToVecPipelineLayouts == _mapLogicDevToVecPipelineLayouts.end()) {
+        _mapLogicDevToVecPipelineLayouts[graphicsLogicalDevice] = ::std::vector<VkPipelineLayout>();
+    }
+    /// @brief The iterator for the logical device and its pipeline vector.
+    auto iterLogicDevToVecPipelines = _mapLogicDevToVecPipelines.find(graphicsLogicalDevice);
+    // Initialize if it doesn't exist yet.
+    if (iterLogicDevToVecPipelines == _mapLogicDevToVecPipelines.end()) {
+        _mapLogicDevToVecPipelines[graphicsLogicalDevice] = ::std::vector<VkPipeline>();
+    }
+
+    /// @brief The container for the result code from the vulkan api.
+    VkResult result;
+
+    /// @brief Information about how the input buffer layout.
+    VkPipelineVertexInputStateCreateInfo vertexInputStateInfo = {};
+    vertexInputStateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+
+    /// @brief Input assembly stage information.
+    VkPipelineInputAssemblyStateCreateInfo inputAssemblyInfo = {};
+    inputAssemblyInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+    inputAssemblyInfo.primitiveRestartEnable = VK_FALSE;
+    inputAssemblyInfo.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+
+    /// @brief The collection of vulkan pipeline shader stages.
+    ::std::vector<VkPipelineShaderStageCreateInfo> vecShaderStageCreateInfos = constructVecShaderStageCreateInfos(
+        graphicsLogicalDevice, ptrGraphicsPipelineConfig
+    );
+
+    /// @brief The collection of vulkan dynamic states.
+    VkDynamicState arrDynamicState[] = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR };
+    /// @brief The information about the pipeline dynamic state.
+    VkPipelineDynamicStateCreateInfo pipelineDynamicStateInfo = {};
+    pipelineDynamicStateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
+    pipelineDynamicStateInfo.dynamicStateCount = static_cast<uint32_t>(sizeof(arrDynamicState) / sizeof(VkDynamicState));
+    pipelineDynamicStateInfo.pDynamicStates = arrDynamicState;
+
+    /// @brief A collection of vulkan viewport structures.
+    ::std::vector<VkViewport> vecViewports;
+    vecViewports.reserve(_mapWindowToSwapChainExtent.size());
+    /// @brief A collection of Scissor objects.
+    ::std::vector<VkRect2D> vecScissors;
+    vecScissors.reserve(vecViewports.size());
+    // Populate viewports and scissors.
+    for (const auto& pairWindowToSwapChainExtent : _mapWindowToSwapChainExtent) {
+        /// @brief Contains swapchain extent information.
+        const VkExtent2D& swapChainExtent = pairWindowToSwapChainExtent.second;
+
+        /// @brief Contains viewport information.
+        VkViewport viewport = {};
+        viewport.x = 0.0f;
+        viewport.y = 0.0f;
+        viewport.width = static_cast<float>(swapChainExtent.width);
+        viewport.height = static_cast<float>(swapChainExtent.height);
+        viewport.minDepth = 0.0f;
+        viewport.maxDepth = 1.0f;
+
+        /// @brief Contains scissor information.
+        VkRect2D scissor = {};
+        scissor.offset = {0, 0};
+        scissor.extent = swapChainExtent;
+
+        vecViewports.emplace_back(::std::move(viewport));
+        vecScissors.emplace_back(::std::move(scissor));
+    }
+
+    /// @brief The viewport state information.
+    VkPipelineViewportStateCreateInfo viewportStateInfo = {};
+    viewportStateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+    viewportStateInfo.viewportCount = static_cast<uint32_t>(vecViewports.size());
+    viewportStateInfo.pViewports = vecViewports.data();
+    viewportStateInfo.scissorCount = static_cast<uint32_t>(vecScissors.size());
+    viewportStateInfo.pScissors = vecScissors.data();
+
+    /// @brief Rasterization Information.
+    VkPipelineRasterizationStateCreateInfo rasterizationInfo = {};
+    rasterizationInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+    rasterizationInfo.depthClampEnable = VK_FALSE;
+    rasterizationInfo.rasterizerDiscardEnable = VK_FALSE;
+    rasterizationInfo.polygonMode = VK_POLYGON_MODE_FILL;
+    rasterizationInfo.lineWidth = 1.0f;
+    rasterizationInfo.cullMode = VK_CULL_MODE_NONE;
+    rasterizationInfo.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+    rasterizationInfo.depthBiasEnable = VK_FALSE;
+
+    /// @brief Multi-sampling information.
+    VkPipelineMultisampleStateCreateInfo multiSamplingInfo{};
+    multiSamplingInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+    multiSamplingInfo.sampleShadingEnable = VK_FALSE;
+    multiSamplingInfo.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+    multiSamplingInfo.minSampleShading = 1.0f;
+
+    /// @brief Colour Blend Attachment.
+    VkPipelineColorBlendAttachmentState colourBlendAttachment = {};
+    colourBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |
+        VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+    colourBlendAttachment.blendEnable = VK_FALSE;
+    colourBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
+    colourBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ZERO;
+    colourBlendAttachment.colorBlendOp = VK_BLEND_OP_ADD;
+    colourBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+    colourBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+    colourBlendAttachment.alphaBlendOp = VK_BLEND_OP_ADD;
+
+    /// @brief Colour blending information.
+    VkPipelineColorBlendStateCreateInfo colourBlendingInfo = {};
+    colourBlendingInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+    colourBlendingInfo.logicOpEnable = VK_FALSE;
+    colourBlendingInfo.logicOp = VK_LOGIC_OP_COPY;
+    colourBlendingInfo.attachmentCount = 1;
+    colourBlendingInfo.pAttachments = &colourBlendAttachment;
+    colourBlendingInfo.blendConstants[0] = 0.0f;
+    colourBlendingInfo.blendConstants[1] = 0.0f;
+    colourBlendingInfo.blendConstants[2] = 0.0f;
+    colourBlendingInfo.blendConstants[3] = 0.0f;
+
+    /// @brief Graphics Pipeline layout information.
+    VkPipelineLayoutCreateInfo graphicsPipelineLayoutInfo{};
+    graphicsPipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+
+    /// @brief The handle to the graphics pipeline layout.
+    VkPipelineLayout graphicsPipelineLayout = nullptr;
+    // Create pipeline layout.
+    result = vkCreatePipelineLayout(graphicsLogicalDevice, &graphicsPipelineLayoutInfo, nullptr, &graphicsPipelineLayout);
+    if (result != VK_SUCCESS) {
+        ::std::string errorMessage = "Failed to create graphics pipeline layout with result " + ::std::to_string(result);
+        celeriqueLogError(errorMessage);
+        throw ::std::runtime_error(errorMessage);
+    }
+    _mapLogicDevToVecPipelineLayouts[graphicsLogicalDevice].push_back(graphicsPipelineLayout);
+    _mapGraphicsPipelineIdToPipelineLayout[currentId] = graphicsPipelineLayout;
+
+    /// @brief Graphics pipeline information.
+    VkGraphicsPipelineCreateInfo graphicsPipelineInfo = {};
+    graphicsPipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+    graphicsPipelineInfo.layout = graphicsPipelineLayout;
+    graphicsPipelineInfo.pVertexInputState = &vertexInputStateInfo;
+    graphicsPipelineInfo.pInputAssemblyState = &inputAssemblyInfo;
+    graphicsPipelineInfo.stageCount = static_cast<uint32_t>(vecShaderStageCreateInfos.size());
+    graphicsPipelineInfo.pStages = vecShaderStageCreateInfos.data();
+    graphicsPipelineInfo.pViewportState = &viewportStateInfo;
+    graphicsPipelineInfo.pRasterizationState = &rasterizationInfo;
+    graphicsPipelineInfo.pColorBlendState = &colourBlendingInfo;
+    graphicsPipelineInfo.pMultisampleState = &multiSamplingInfo;
+    graphicsPipelineInfo.renderPass = _pairRenderPassToLogicDev.first;
+    // graphicsPipelineInfo.pDynamicState = &pipelineDynamicStateInfo; // TODO: Implement.
+
+    /// @brief The handle to the graphics pipeline.
+    VkPipeline graphicsPipeline = nullptr;
+    // Create graphics pipeline.
+    result = vkCreateGraphicsPipelines(
+        graphicsLogicalDevice, nullptr, 1, &graphicsPipelineInfo, nullptr, &graphicsPipeline
+    );
+    if (result != VK_SUCCESS) {
+        ::std::string errorMessage = "Failed to create graphics pipeline with result " + ::std::to_string(result);
+        celeriqueLogError(errorMessage);
+        throw ::std::runtime_error(errorMessage);
+    }
+    _mapLogicDevToVecPipelines[graphicsLogicalDevice].push_back(graphicsPipeline);
+    _mapGraphicsPipelineIdToPipeline[currentId] = graphicsPipeline;
+
+    celeriqueLogDebug("Created graphics pipeline.");
 }
 
 /// @brief Remove the graphics pipeline specified.
@@ -77,7 +255,24 @@ void ::celerique::vulkan::internal::Manager::clearGraphicsPipelines() {
 /// @param graphicsPipelineConfigId The identifier for the graphics pipeline configuration to be used for drawing.
 void ::celerique::vulkan::internal::Manager::draw(PipelineConfigID graphicsPipelineConfigId) {
     ::std::shared_lock<::std::shared_mutex> readLock(_sharedMutex);
-    // TODO: Implement.
+
+    /// @brief The container for the thread handles that executes the draw calls for each window.
+    ::std::vector<::std::thread> vecDrawCallThreads;
+    // Iterate over all windows to be drawn.
+    for (const auto& pairWindowToSurface : _mapWindowToSurface) {
+        /// @brief The window handle.
+        Pointer windowHandle = pairWindowToSurface.first;
+        // Execute drawing on a different thread.
+        ::std::thread drawCallThread(::std::bind(
+            &Manager::drawOnWindow, this, windowHandle, graphicsPipelineConfigId
+        ));
+        // Collect thread handle.
+        vecDrawCallThreads.emplace_back(::std::move(drawCallThread));
+    }
+    // Wait on all draw call threads to finish before exiting.
+    for (::std::thread& drawCallThread : vecDrawCallThreads) {
+        drawCallThread.join();
+    }
 }
 
 /// @brief Add the window handle to the graphics API.
@@ -125,6 +320,7 @@ void celerique::vulkan::internal::Manager::addWindow(UiProtocol uiProtocol, Poin
     createRenderPass(windowHandle);
     createSwapChainFrameBuffers(windowHandle);
     createCommandBuffers(windowHandle);
+    createSyncObjects(windowHandle);
 
     celeriqueLogDebug("Registered window.");
 }
@@ -147,6 +343,35 @@ void celerique::vulkan::internal::Manager::removeWindow(Pointer windowHandle) {
 
     /// @brief The logical device for graphics purposes.
     VkDevice graphicsLogicalDevice = _mapWindowToGraphicsLogicDev[windowHandle];
+    // Wait for resources to clear out.
+    vkDeviceWaitIdle(graphicsLogicalDevice);
+
+    /// @brief The collection of in-flight fences to be destroyed.
+    const ::std::vector<VkFence>& vecInFlightFences = _mapWindowToVecInFlightFences[windowHandle];
+    // Destroy the in-flight fences.
+    for (VkFence inFlightFences : vecInFlightFences) {
+        vkDestroyFence(graphicsLogicalDevice, inFlightFences, nullptr);
+    }
+    _mapWindowToVecInFlightFences.erase(windowHandle);
+    celeriqueLogTrace("Destroyed window in-flight fences.");
+
+    /// @brief The collection of render-finished semaphores.
+    const ::std::vector<VkSemaphore>& vecRenderFinishedSemaphores = _mapWindowToVecRenderFinishedSemaphores[windowHandle];
+    // Destroy the render-finished semaphores.
+    for (VkSemaphore renderFinishedSemaphore : vecRenderFinishedSemaphores) {
+        vkDestroySemaphore(graphicsLogicalDevice, renderFinishedSemaphore, nullptr);
+    }
+    _mapWindowToVecRenderFinishedSemaphores.clear();
+    celeriqueLogTrace("Destroyed window render finished semaphores.");
+
+    /// @brief The collection of image available semaphores.
+    const ::std::vector<VkSemaphore>& vecImageAvailableSemaphores = _mapWindowToVecImageAvailableSemaphores[windowHandle];
+    // Destroy the image available semaphores.
+    for (VkSemaphore imageAvailableSemaphore : vecImageAvailableSemaphores) {
+        vkDestroySemaphore(graphicsLogicalDevice, imageAvailableSemaphore, nullptr);
+    }
+    _mapWindowToVecImageAvailableSemaphores.clear();
+    celeriqueLogTrace("Destroyed window image available semaphores.");
 
     _mapWindowToVecCommandBuffers.erase(windowHandle);
     celeriqueLogTrace("Removed command buffer references for the window.");
@@ -159,12 +384,6 @@ void celerique::vulkan::internal::Manager::removeWindow(Pointer windowHandle) {
     }
     _mapWindowToVecSwapChainFrameBuffers.erase(windowHandle);
     celeriqueLogTrace("Destroyed window swapchain frame buffers.");
-
-    /// @brief The render pass to be destroyed.
-    VkRenderPass renderPass = _mapWindowToRenderPass[windowHandle];
-    vkDestroyRenderPass(graphicsLogicalDevice, renderPass, nullptr);
-    _mapWindowToRenderPass.erase(windowHandle);
-    celeriqueLogTrace("Destroyed window render pass.");
 
     /// @brief The swapchain image views of the window.
     const ::std::vector<VkImageView>& vecSwapChainImageViews = _mapWindowToVecSwapChainImageViews[windowHandle];
@@ -220,8 +439,15 @@ celerique::vulkan::internal::Manager::~Manager() {
     // Write lock thread during resource cleanup.
     ::std::unique_lock<::std::shared_mutex> writeLock(_sharedMutex);
 
+    // Wait for the graphics logical devices's resources to be available.
+    for (VkDevice graphicsLogicalDevice : _vecGraphicsLogicDev) {
+        vkDeviceWaitIdle(graphicsLogicalDevice);
+    }
+
+    destroySyncObjects();
+    destroyPipelines();
     destroySwapChainFrameBuffers();
-    destroyRenderPasses();
+    destroyRenderPass();
     destroySwapChainImageViews();
     destroySwapChains();
     destroyCommandPools();
@@ -312,7 +538,7 @@ void celerique::vulkan::internal::Manager::createVulkanInstance() {
 
 // Create debug messenger info.
 #if defined(CELERIQUE_DEBUG_MODE)
-    VkDebugUtilsMessengerCreateInfoEXT debugMessengerInfo{};
+    VkDebugUtilsMessengerCreateInfoEXT debugMessengerInfo = {};
     debugMessengerInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
     debugMessengerInfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
     VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
@@ -380,6 +606,95 @@ void celerique::vulkan::internal::Manager::collectAvailablePhysicalDevices() {
     );
 }
 
+/// @brief Destroy all sync objects.
+void celerique::vulkan::internal::Manager::destroySyncObjects() {
+    for (const auto& pairWindowToVecImageAvailableSemaphores : _mapWindowToVecImageAvailableSemaphores) {
+        /// @brief The handle to the window.
+        Pointer windowHandle = pairWindowToVecImageAvailableSemaphores.first;
+        /// @brief The handle to the graphics logical device assigned to the window.
+        VkDevice graphicsLogicalDevice = _mapWindowToGraphicsLogicDev[windowHandle];
+        /// @brief The collection of image available semaphores.
+        const ::std::vector<VkSemaphore>& vecImageAvailableSemaphores = pairWindowToVecImageAvailableSemaphores.second;
+        // Iterate over and destroy.
+        for (VkSemaphore imageAvailableSemaphore : vecImageAvailableSemaphores) {
+            vkDestroySemaphore(graphicsLogicalDevice, imageAvailableSemaphore, nullptr);
+        }
+    }
+    _mapWindowToVecImageAvailableSemaphores.clear();
+    for (const auto& pairWindowToVecRenderFinishedSemaphores : _mapWindowToVecRenderFinishedSemaphores) {
+        /// @brief The handle to the window.
+        Pointer windowHandle = pairWindowToVecRenderFinishedSemaphores.first;
+        /// @brief The handle to the graphics logical device assigned to the window.
+        VkDevice graphicsLogicalDevice = _mapWindowToGraphicsLogicDev[windowHandle];
+        /// @brief The collection of render finished semaphores.
+        const ::std::vector<VkSemaphore>& vecRenderFinishedSemaphores = pairWindowToVecRenderFinishedSemaphores.second;
+        // Iterate over and destroy.
+        for (VkSemaphore renderFinishedSemaphore : vecRenderFinishedSemaphores) {
+            vkDestroySemaphore(graphicsLogicalDevice, renderFinishedSemaphore, nullptr);
+        }
+    }
+    _mapWindowToVecRenderFinishedSemaphores.clear();
+    for (const auto& pairWindowToVecInFlightFences : _mapWindowToVecInFlightFences) {
+        /// @brief The handle to the window.
+        Pointer windowHandle = pairWindowToVecInFlightFences.first;
+        /// @brief The handle to the graphics logical device assigned to the window.
+        VkDevice graphicsLogicalDevice = _mapWindowToGraphicsLogicDev[windowHandle];
+        /// @brief The collection of in-flight fences.
+        const ::std::vector<VkFence>& vecInFlightFences = pairWindowToVecInFlightFences.second;
+        // Iterate over and destroy.
+        for (VkFence inFlightFence : vecInFlightFences) {
+            vkDestroyFence(graphicsLogicalDevice, inFlightFence, nullptr);
+        }
+    }
+    _mapWindowToVecInFlightFences.clear();
+
+    celeriqueLogTrace("Destroyed all sync objects.");
+}
+
+/// @brief Destroy all pipeline related objects.
+void celerique::vulkan::internal::Manager::destroyPipelines() {
+    // Iterate over all pipeline layouts.
+    for (const auto& pairLogicDevToVecPipelineLayout : _mapLogicDevToVecPipelineLayouts) {
+        /// @brief The logical device creator.
+        VkDevice logicalDevice = pairLogicDevToVecPipelineLayout.first;
+        /// @brief The collection of pipeline layouts to be destroyed.
+        ::std::vector<VkPipelineLayout> vecPipelineLayouts = pairLogicDevToVecPipelineLayout.second;
+        // Iterate over and destroy.
+        for (VkPipelineLayout pipelineLayout : vecPipelineLayouts) {
+            vkDestroyPipelineLayout(logicalDevice, pipelineLayout, nullptr);
+        }
+    }
+    _mapLogicDevToVecPipelineLayouts.clear();
+    _mapGraphicsPipelineIdToPipelineLayout.clear();
+    // Iterate over pipeline instances.
+    for (const auto& pairLogicDevToVecPipelines : _mapLogicDevToVecPipelines) {
+        /// @brief The logical device creator.
+        VkDevice logicalDevice = pairLogicDevToVecPipelines.first;
+        /// @brief The collection of pipelines to be destroyed.
+        ::std::vector<VkPipeline> vecPipelines = pairLogicDevToVecPipelines.second;
+        // Iterate over and destroy.
+        for (VkPipeline pipeline : vecPipelines) {
+            vkDestroyPipeline(logicalDevice, pipeline, nullptr);
+        }
+    }
+    _mapLogicDevToVecPipelines.clear();
+    _mapGraphicsPipelineIdToPipeline.clear();
+    // Iterate over shader modules.
+    for (const auto& pairLogicDevToVecShaderModules : _mapLogicDevToVecShaderModules) {
+        /// @brief The logical device creator.
+        VkDevice logicalDevice = pairLogicDevToVecShaderModules.first;
+        /// @brief The collection of shader modules to be destroyed.
+        ::std::vector<VkShaderModule> vecShaderModules = pairLogicDevToVecShaderModules.second;
+        // Iterate over and destroy.
+        for (VkShaderModule shaderModule : vecShaderModules) {
+            vkDestroyShaderModule(logicalDevice, shaderModule, nullptr);
+        }
+    }
+    _mapLogicDevToVecShaderModules.clear();
+
+    celeriqueLogTrace("Destroyed all pipeline related objects.");
+}
+
 /// @brief Destroy all swapchain frame buffers.
 void celerique::vulkan::internal::Manager::destroySwapChainFrameBuffers() {
     for (const auto& pairWindowToVecSwapChainFrameBuffers : _mapWindowToVecSwapChainFrameBuffers) {
@@ -399,19 +714,14 @@ void celerique::vulkan::internal::Manager::destroySwapChainFrameBuffers() {
 }
 
 /// @brief Destroy all render passes.
-void celerique::vulkan::internal::Manager::destroyRenderPasses() {
-    for (const auto& pairWindowToRenderPass : _mapWindowToRenderPass) {
-        /// @brief The handle to the window.
-        Pointer windowHandle = pairWindowToRenderPass.first;
-        /// @brief The graphics logical device that created the render pass.
-        VkDevice graphicsLogicalDevice = _mapWindowToGraphicsLogicDev[windowHandle];
-        /// @brief The render pass to be destroyed.
-        VkRenderPass renderPass = pairWindowToRenderPass.second;
+void celerique::vulkan::internal::Manager::destroyRenderPass() {
+    /// @brief The logical device that created the render pass.
+    VkDevice logicalDevice = _pairRenderPassToLogicDev.second;
+    /// @brief The render pass to be destroyed.
+    VkRenderPass renderPass = _pairRenderPassToLogicDev.first;
 
-        // Destroy render pass.
-        vkDestroyRenderPass(graphicsLogicalDevice, renderPass, nullptr);
-    }
-    _mapWindowToRenderPass.clear();
+    // Destroy render pass.
+    vkDestroyRenderPass(logicalDevice, renderPass, nullptr);
 
     celeriqueLogTrace("Destroyed all render passes.");
 }
@@ -708,9 +1018,13 @@ VkDevice celerique::vulkan::internal::Manager::createGraphicsLogicalDevice(Point
         vecQueueFamIndicesPresent.begin(), vecQueueFamIndicesPresent.end()
     );
 
+    /// @brief The index of the being requested.
+    uint32_t queueIndex = 0;
     // Retrieve graphics queue handles.
-    for (uint32_t queueIndex = 0; queueIndex < numQueue; queueIndex++) {
-        uint32_t queueFamilyIndex = vecUniqueIndices[queueIndex];
+    for (uint32_t queueFamilyIndex : vecUniqueIndices) {
+        // The number of queues requested is reached.
+        if (queueIndex == numQueue) break;
+
         /// @brief The handle to the queue to be obtained.
         VkQueue queue = nullptr;
         vkGetDeviceQueue(graphicsLogicalDevice, queueFamilyIndex, queueIndex, &queue);
@@ -718,35 +1032,50 @@ VkDevice celerique::vulkan::internal::Manager::createGraphicsLogicalDevice(Point
         // Collect queue with graphics flag.
         if (setQueueFamIndicesGraphics.find(queueFamilyIndex) != setQueueFamIndicesGraphics.end()) {
             vecGraphicsQueues.push_back(queue);
+
+            /// @brief The handle to the command pool.
+            VkCommandPool commandPool = nullptr;
+            /// @brief The information on how to create the command pool.
+            VkCommandPoolCreateInfo commandPoolInfo = {};
+            commandPoolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+            commandPoolInfo.queueFamilyIndex = queueFamilyIndex;
+            commandPoolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+            // Create the command pool.
+            result = vkCreateCommandPool(graphicsLogicalDevice, &commandPoolInfo, nullptr, &commandPool);
+            if (result != VK_SUCCESS) {
+                ::std::string errorMessage = "Failed to create command pool "
+                "with result " + ::std::to_string(result);
+                celeriqueLogError(errorMessage);
+                throw ::std::runtime_error(errorMessage);
+            }
+            vecCommandPools.push_back(commandPool);
+            celeriqueLogTrace("Created graphics command pool.");
+            queueIndex++;
         }
-        // Collect queue with present flag.
+    }
+    // Reset.
+    queueIndex = 0;
+    // Retrieve present queue handles.
+    for (uint32_t queueFamilyIndex : vecUniqueIndices) {
+        // The number of queues requested is reached.
+        if (queueIndex == numQueue) break;
+
+        /// @brief The handle to the queue to be obtained.
+        VkQueue queue = nullptr;
+        vkGetDeviceQueue(graphicsLogicalDevice, queueFamilyIndex, queueIndex, &queue);
+
+        // Collect queue with graphics flag.
         if (setQueueFamIndicesPresent.find(queueFamilyIndex) != setQueueFamIndicesPresent.end()) {
             vecPresentQueues.push_back(queue);
+            queueIndex++;
         }
-
-        /// @brief The handle to the command pool.
-        VkCommandPool commandPool = nullptr;
-        /// @brief The information on how to create the command pool.
-        VkCommandPoolCreateInfo commandPoolInfo = {};
-        commandPoolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-        commandPoolInfo.queueFamilyIndex = queueFamilyIndex;
-        commandPoolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-        // Create the command pool.
-        result = vkCreateCommandPool(graphicsLogicalDevice, &commandPoolInfo, nullptr, &commandPool);
-        if (result != VK_SUCCESS) {
-            ::std::string errorMessage = "Failed to create command pool "
-            "with result " + ::std::to_string(result);
-            celeriqueLogError(errorMessage);
-            throw ::std::runtime_error(errorMessage);
-        }
-        vecCommandPools.push_back(commandPool);
     }
+
     _mapGraphicsLogicDevToVecGraphicsQueues[graphicsLogicalDevice] = ::std::move(vecGraphicsQueues);
     _mapGraphicsLogicDevToVecPresentQueues[graphicsLogicalDevice] = ::std::move(vecPresentQueues);
     celeriqueLogTrace("Retrieved necessary queues for rendering graphics.");
 
     _mapLogicDevToVecCommandPools[graphicsLogicalDevice] = ::std::move(vecCommandPools);
-    celeriqueLogTrace("Created graphics command pools.");
 
     return graphicsLogicalDevice;
 }
@@ -881,6 +1210,7 @@ void celerique::vulkan::internal::Manager::createSwapChainImageViews(Pointer win
         vecSwapChainImageViews.push_back(swapChainImageView);
     }
 
+    _mapWindowToVecSwapChainImages[windowHandle] = ::std::move(vecSwapChainImages);
     _mapWindowToVecSwapChainImageViews[windowHandle] = ::std::move(vecSwapChainImageViews);
     celeriqueLogTrace("Created swapchain image views.");
 }
@@ -888,6 +1218,11 @@ void celerique::vulkan::internal::Manager::createSwapChainImageViews(Pointer win
 /// @brief Create the render pass for windows implemented in the specified UI protocol.
 /// @param windowHandle The UI protocol native pointer of the window to be registered.
 void ::celerique::vulkan::internal::Manager::createRenderPass(Pointer windowHandle) {
+    if (_pairRenderPassToLogicDev.first != nullptr) {
+        celeriqueLogDebug("Render pass already created.");
+        return;
+    }
+
     /// @brief The container for the result code from the vulkan api.
     VkResult result;
     /// @brief The handle to the graphics logical device.
@@ -942,7 +1277,8 @@ void ::celerique::vulkan::internal::Manager::createRenderPass(Pointer windowHand
         celeriqueLogError(errorMessage);
         throw ::std::runtime_error(errorMessage);
     }
-    _mapWindowToRenderPass[windowHandle] = renderPass;
+    _pairRenderPassToLogicDev.first = renderPass;
+    _pairRenderPassToLogicDev.second = graphicsLogicalDevice;
 
     celeriqueLogTrace("Created render pass.");
 }
@@ -968,9 +1304,8 @@ void ::celerique::vulkan::internal::Manager::createSwapChainFrameBuffers(Pointer
 
         /// @brief The information about the framebuffer to be created.
         VkFramebufferCreateInfo frameBufferInfo = {};
-        frameBufferInfo.sType = VkStructureType
-            ::VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-        frameBufferInfo.renderPass = _mapWindowToRenderPass[windowHandle];
+        frameBufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+        frameBufferInfo.renderPass = _pairRenderPassToLogicDev.first;
         frameBufferInfo.width = _mapWindowToSwapChainExtent[windowHandle].width;
         frameBufferInfo.height = _mapWindowToSwapChainExtent[windowHandle].height;
         frameBufferInfo.layers = 1;
@@ -1036,6 +1371,83 @@ void celerique::vulkan::internal::Manager::createCommandBuffers(Pointer windowHa
     _mapWindowToGraphicsCommandPool[windowHandle] = graphicsCommandPool;
     _mapWindowToVecCommandBuffers[windowHandle] = ::std::move(vecCommandBuffers);
     celeriqueLogTrace("Created command buffers.");
+}
+
+/// @brief Create synchronization objects.
+/// @param windowHandle The UI protocol native pointer of the window to be registered.
+void celerique::vulkan::internal::Manager::createSyncObjects(Pointer windowHandle) {
+    // Render on the first frame.
+    _mapWindowToCurrentFrameIndex[windowHandle] = 0;
+
+    /// @brief The handle to the graphics logical device assigned for the window.
+    VkDevice graphicsLogicalDevice = _mapWindowToGraphicsLogicDev[windowHandle];
+    /// @brief The number of semaphores and fences to create. (will depend on number of frame buffers).
+    size_t numOfSyncObjects = _mapWindowToVecSwapChainFrameBuffers[windowHandle].size();
+
+    /// @brief The collection of image available semaphores.
+    ::std::vector<VkSemaphore> vecImageAvailableSemaphores;
+    vecImageAvailableSemaphores.reserve(numOfSyncObjects);
+    /// @brief The collection of render finished semaphores.
+    ::std::vector<VkSemaphore> vecRenderFinishedSemaphores;
+    vecRenderFinishedSemaphores.reserve(numOfSyncObjects);
+    /// @brief The collection of in-flight fences.
+    ::std::vector<VkFence> vecInFlightFences;
+    vecInFlightFences.reserve(numOfSyncObjects);
+
+    // Create the sync objects.
+    for (size_t i = 0; i < numOfSyncObjects; i++) {
+        /// @brief The container for the result code from the vulkan api.
+        VkResult result;
+
+        /// @brief Information about the image available semaphore.
+        VkSemaphoreCreateInfo imageAvailableSemaphoreInfo = {};
+        imageAvailableSemaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+        /// @brief The handle to the image available semaphore.
+        VkSemaphore imageAvailableSemaphore = nullptr;
+        // Create the image available semaphore.
+        result = vkCreateSemaphore(graphicsLogicalDevice, &imageAvailableSemaphoreInfo, nullptr, &imageAvailableSemaphore);
+        if (result != VK_SUCCESS) {
+            ::std::string errorMessage = "Failed to create image available semaphore with result " + ::std::to_string(result);
+            celeriqueLogError(errorMessage);
+            throw ::std::runtime_error(errorMessage);
+        }
+        vecImageAvailableSemaphores.push_back(imageAvailableSemaphore);
+
+        /// @brief Information about the render finished semaphore.
+        VkSemaphoreCreateInfo renderFinishedSemaphoreInfo = {};
+        renderFinishedSemaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+        /// @brief The handle to the render finished semaphore.
+        VkSemaphore renderFinishedSemaphore = nullptr;
+        // Create the image available semaphore.
+        result = vkCreateSemaphore(graphicsLogicalDevice, &renderFinishedSemaphoreInfo, nullptr, &renderFinishedSemaphore);
+        if (result != VK_SUCCESS) {
+            ::std::string errorMessage = "Failed to create render finished semaphore with result " + ::std::to_string(result);
+            celeriqueLogError(errorMessage);
+            throw ::std::runtime_error(errorMessage);
+        }
+        vecRenderFinishedSemaphores.push_back(renderFinishedSemaphore);
+
+        /// @brief The information about the in-flight fence.
+        VkFenceCreateInfo inFlightFenceInfo{};
+        inFlightFenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+        inFlightFenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+        /// @brief The handle to the in-flight fence.
+        VkFence inFlightFence;
+        // Create the in-flight fence.
+        result = vkCreateFence(graphicsLogicalDevice, &inFlightFenceInfo, nullptr, &inFlightFence);
+        if (result != VK_SUCCESS) {
+            ::std::string errorMessage = "Failed to create in-flight fence with result " + ::std::to_string(result);
+            celeriqueLogError(errorMessage);
+            throw ::std::runtime_error(errorMessage);
+        }
+        vecInFlightFences.push_back(inFlightFence);
+    }
+    // Map everything to the window handle.
+    _mapWindowToVecImageAvailableSemaphores[windowHandle] = ::std::move(vecImageAvailableSemaphores);
+    _mapWindowToVecRenderFinishedSemaphores[windowHandle] = ::std::move(vecRenderFinishedSemaphores);
+    _mapWindowToVecInFlightFences[windowHandle] = ::std::move(vecInFlightFences);
+
+    celeriqueLogTrace("Created sync objects.");
 }
 
 /// @brief Choose the swapchain best image format out of the specified surface format.
@@ -1178,6 +1590,251 @@ uint32_t celerique::vulkan::internal::Manager::determineMinImageCount(const VkSu
     );
 }
 
+/// @brief Draw graphics to a window.
+/// @param windowHandle The handle to the window to be drawn graphics on.
+/// @param graphicsPipelineConfigId The identifier for the graphics pipeline configuration to be used for drawing.
+void celerique::vulkan::internal::Manager::drawOnWindow(Pointer windowHandle, PipelineConfigID graphicsPipelineConfigId) {
+    ::std::shared_lock<::std::shared_mutex> readLock(_sharedMutex);
+
+    /// @brief The container for the result code from the vulkan api.
+    VkResult result;
+    /// @brief The graphics logical device assigned to the window.
+    VkDevice graphicsLogicalDevice = _mapWindowToGraphicsLogicDev[windowHandle];
+    /// @brief The current frame index being rendered.
+    size_t currentFrameIndex = _mapWindowToCurrentFrameIndex[windowHandle];
+    /// @brief The collection of in-flight fences for the window.
+    const ::std::vector<VkFence>& vecInFlightFences = _mapWindowToVecInFlightFences[windowHandle];
+
+    // Wait until the previous frame has finished rendering in the GPU.
+    result = vkWaitForFences(graphicsLogicalDevice, 1, &vecInFlightFences[currentFrameIndex], VK_TRUE, UINT32_MAX);
+    if (result != VK_SUCCESS) {
+        ::std::string errorMessage = "Failed to wait for in-flight fence with result " + ::std::to_string(result);
+        celeriqueLogError(errorMessage);
+        throw ::std::runtime_error(errorMessage);
+    }
+
+    /// @brief The window's swapchain handle.
+    VkSwapchainKHR swapChain = _mapWindowToSwapChain[windowHandle];
+    /// @brief The collection of image available semaphores.
+    const ::std::vector<VkSemaphore>& vecImageAvailableSemaphores = _mapWindowToVecImageAvailableSemaphores[windowHandle];
+
+    /// @brief The index of the image to be rendered.
+    uint32_t imageIndex = 0;
+    // Obtain next image index.
+    result = vkAcquireNextImageKHR(
+        graphicsLogicalDevice, swapChain, UINT32_MAX,
+        vecImageAvailableSemaphores[currentFrameIndex], VK_NULL_HANDLE, &imageIndex
+    );
+    if (result == VK_ERROR_OUT_OF_DATE_KHR) {
+        // TODO: Implement update or re-create swapchain.
+        return;
+    }
+    else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
+        ::std::string errorMessage = "Failed to acquire next image index with result " + ::std::to_string(result);
+        celeriqueLogError(errorMessage);
+        throw ::std::runtime_error(errorMessage);
+    }
+
+    // Reset the fence for drawing in the GPU.
+    result = vkResetFences(graphicsLogicalDevice, 1, &vecInFlightFences[currentFrameIndex]);
+    if (result != VK_SUCCESS) {
+        ::std::string errorMessage = "Failed to reset in-flight fence with result " + ::std::to_string(result);
+        celeriqueLogError(errorMessage);
+        throw ::std::runtime_error(errorMessage);
+    }
+
+    /// @brief The collection of the window's command buffer.
+    const ::std::vector<VkCommandBuffer>& vecCommandBuffers = _mapWindowToVecCommandBuffers[windowHandle];
+    // Reset the command buffer.
+    result = vkResetCommandBuffer(vecCommandBuffers[currentFrameIndex], 0);
+    if (result != VK_SUCCESS) {
+        ::std::string errorMessage = "Failed to reset command buffer with result " + ::std::to_string(result);
+        celeriqueLogError(errorMessage);
+        throw ::std::runtime_error(errorMessage);
+    }
+
+    /// @brief Information about how the command buffer begins recording.
+    VkCommandBufferBeginInfo commandBufferBeginInfo = {};
+    commandBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    result = vkBeginCommandBuffer(vecCommandBuffers[currentFrameIndex], &commandBufferBeginInfo);
+    if (result != VK_SUCCESS) {
+        ::std::string errorMessage = "Failed to begin command buffer with result " + ::std::to_string(result);
+        celeriqueLogError(errorMessage);
+        throw ::std::runtime_error(errorMessage);
+    }
+
+    /// @brief The clear value.
+    VkClearValue clearValue;
+    clearValue.color = {0.0f, 0.0f, 0.0f, 0.01}; // Setting the screen to black.
+    /// @brief The window's collection of frame buffers.
+    const ::std::vector<VkFramebuffer>& vecSwapChainFrameBuffers = _mapWindowToVecSwapChainFrameBuffers[windowHandle];
+
+    /// @brief Information about beginning render pass.
+    VkRenderPassBeginInfo renderPassBeginInfo = {};
+    renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+    renderPassBeginInfo.renderPass = _pairRenderPassToLogicDev.first;
+    renderPassBeginInfo.framebuffer = vecSwapChainFrameBuffers[imageIndex];
+    renderPassBeginInfo.renderArea.offset = {0, 0};
+    renderPassBeginInfo.renderArea.extent = _mapWindowToSwapChainExtent[windowHandle];
+    renderPassBeginInfo.clearValueCount = 1;
+    renderPassBeginInfo.pClearValues = &clearValue;
+    // Begin render pass.
+    vkCmdBeginRenderPass(vecCommandBuffers[currentFrameIndex], &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+    /// @brief The handle to the graphics pipeline to be used for rendering.
+    VkPipeline graphicsPipeline = _mapGraphicsPipelineIdToPipeline[graphicsPipelineConfigId];
+    // Bind the command buffer to the graphics pipeline.
+    vkCmdBindPipeline(vecCommandBuffers[currentFrameIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
+
+    // TODO: Implement draw using vertex and index buffers.
+    vkCmdDraw(vecCommandBuffers[currentFrameIndex], 3, 1, 0, 0);
+
+    // End the render pass.
+    vkCmdEndRenderPass(vecCommandBuffers[currentFrameIndex]);
+    // End command buffer recording.
+    result = vkEndCommandBuffer(vecCommandBuffers[currentFrameIndex]);
+    if (result != VK_SUCCESS) {
+        ::std::string errorMessage = "Failed to record command with result " + ::std::to_string(result);
+        celeriqueLogError(errorMessage);
+        throw ::std::runtime_error(errorMessage);
+    }
+
+    /// @brief Collection of wait stages.
+    VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
+    /// @brief The collection of render finished semaphores.
+    const ::std::vector<VkSemaphore>& vecRenderFinishedSemaphores = _mapWindowToVecRenderFinishedSemaphores[windowHandle];
+
+    /// @brief Information to be submitted to the graphics queue.
+    VkSubmitInfo graphicsQueueSubmitInfo = {};
+    graphicsQueueSubmitInfo.sType = VkStructureType::VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    graphicsQueueSubmitInfo.commandBufferCount = 1;
+    graphicsQueueSubmitInfo.pCommandBuffers = &vecCommandBuffers[currentFrameIndex];
+    graphicsQueueSubmitInfo.waitSemaphoreCount = 1;
+    graphicsQueueSubmitInfo.pWaitSemaphores = &vecImageAvailableSemaphores[currentFrameIndex];
+    graphicsQueueSubmitInfo.pWaitDstStageMask = waitStages;
+    graphicsQueueSubmitInfo.signalSemaphoreCount = 1;
+    graphicsQueueSubmitInfo.pSignalSemaphores = &vecRenderFinishedSemaphores[currentFrameIndex];
+
+    // Submit to the graphics queue. Signals the in-flight fence when graphics rendering is done.
+    result = vkQueueSubmit(
+        _mapGraphicsLogicDevToVecGraphicsQueues[graphicsLogicalDevice][0], // TODO: Implement graphics queue selection.
+        1, &graphicsQueueSubmitInfo, vecInFlightFences[currentFrameIndex]
+    );
+    if (result != VK_SUCCESS) {
+        ::std::string errorMessage = "Failed to submit to graphics queue with result " + ::std::to_string(result);
+        celeriqueLogError(errorMessage);
+        throw ::std::runtime_error(errorMessage);
+    }
+
+    /// @brief Presentation information.
+    VkPresentInfoKHR presentInfo = {};
+    presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+    presentInfo.waitSemaphoreCount = 1;
+    presentInfo.pWaitSemaphores = &vecRenderFinishedSemaphores[currentFrameIndex];
+    presentInfo.swapchainCount = 1;
+    presentInfo.pSwapchains = &swapChain;
+    presentInfo.pImageIndices = &imageIndex;
+
+    // Waits for the graphics rendering before
+    // presenting the image back to the swapchain.
+    result = vkQueuePresentKHR(
+        _mapGraphicsLogicDevToVecPresentQueues[graphicsLogicalDevice][0], // TODO: Implement present queue selection.
+        &presentInfo
+    );
+    if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) {
+        // TODO: Implement update or re-create swapchain.
+        return;
+    } else if (result != VK_SUCCESS) {
+        ::std::string errorMessage = "Failed to submit to present with result " + ::std::to_string(result);
+        celeriqueLogError(errorMessage);
+        throw ::std::runtime_error(errorMessage);
+    }
+
+    // Update the current frame index.
+    _mapWindowToCurrentFrameIndex[windowHandle] = (currentFrameIndex + 1) % vecSwapChainFrameBuffers.size();
+}
+
+/// @brief Construct a collection shader stage create information structures.
+/// @param logicalDevice The handle to the logical device that is used to create the pipeline.
+/// @param ptrPipelineConfig The pointer to the pipeline configuration.
+/// @return The collection of vulkan pipeline shader stages.
+::std::vector<VkPipelineShaderStageCreateInfo> celerique::vulkan::internal::Manager::constructVecShaderStageCreateInfos(
+    VkDevice logicalDevice, PipelineConfig* ptrPipelineConfig
+) {
+    /// @brief The container for the result code from the vulkan api.
+    VkResult result;
+
+    /// @brief The collection of shader stages.
+    ::std::vector<ShaderStage> vecShaderStages = ptrPipelineConfig->vecStages();
+    /// @brief The collection of vulkan pipeline shader stages.
+    ::std::vector<VkPipelineShaderStageCreateInfo> vecShaderStageCreateInfos;
+    vecShaderStageCreateInfos.reserve(vecShaderStages.size());
+
+    /// @brief The iterator for the logical device and its shader module vector.
+    auto iterLogicDevToVecShaderModules = _mapLogicDevToVecShaderModules.find(logicalDevice);
+    // Initialize if it doesn't exist yet.
+    if (iterLogicDevToVecShaderModules == _mapLogicDevToVecShaderModules.end()) {
+        _mapLogicDevToVecShaderModules[logicalDevice] = ::std::vector<VkShaderModule>();
+        _mapLogicDevToVecShaderModules[logicalDevice].reserve(vecShaderStages.size());
+    }
+
+    // Iterating over shader stages.
+    for (ShaderStage shaderStage : vecShaderStages) {
+        /// @brief The reference to the shader program of the specified shader stage.
+        ShaderProgram& refShaderProgram = ptrPipelineConfig->shaderProgram(shaderStage);
+        /// @brief The information about the shader module.
+        VkShaderModuleCreateInfo shaderModuleInfo = {};
+        shaderModuleInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+        shaderModuleInfo.codeSize = refShaderProgram.size();
+        shaderModuleInfo.pCode = reinterpret_cast<uint32_t*>(refShaderProgram.ptrBuffer());
+        /// @brief The shader module to be created.
+        VkShaderModule shaderModule;
+        // Create the shader module.
+        result = vkCreateShaderModule(logicalDevice, &shaderModuleInfo, nullptr, &shaderModule);
+        if (result != VK_SUCCESS) {
+            ::std::string errorMessage = "Failed to create shader module with result " + ::std::to_string(result);
+            celeriqueLogError(errorMessage);
+            throw ::std::runtime_error(errorMessage);
+        }
+        _mapLogicDevToVecShaderModules[logicalDevice].push_back(shaderModule);
+
+        /// @brief The information about the vulkan pipeline shader stage.
+        VkPipelineShaderStageCreateInfo shaderStageCreateInfo = {};
+        shaderStageCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+        shaderStageCreateInfo.module = shaderModule;
+        shaderStageCreateInfo.pName = "main";
+        switch(shaderStage) {
+        case CELERIQUE_SHADER_STAGE_VERTEX:
+            shaderStageCreateInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
+            celeriqueLogTrace("Created vertex shader module.");
+            break;
+        case CELERIQUE_SHADER_STAGE_TESSELLATION_CONTROL:
+            shaderStageCreateInfo.stage = VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT;
+            celeriqueLogTrace("Created tesselation control shader module.");
+            break;
+        case CELERIQUE_SHADER_STAGE_TESSELLATION_EVALUATION:
+            shaderStageCreateInfo.stage = VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT;
+            celeriqueLogTrace("Created tesselation evaluation shader module.");
+            break;
+        case CELERIQUE_SHADER_STAGE_GEOMETRY:
+            shaderStageCreateInfo.stage = VK_SHADER_STAGE_GEOMETRY_BIT;
+            celeriqueLogTrace("Created geometry shader module.");
+            break;
+        case CELERIQUE_SHADER_STAGE_FRAGMENT:
+            shaderStageCreateInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+            celeriqueLogTrace("Created fragment shader module.");
+            break;
+        case CELERIQUE_SHADER_STAGE_COMPUTE:
+            shaderStageCreateInfo.stage = VK_SHADER_STAGE_COMPUTE_BIT;
+            celeriqueLogTrace("Created compute shader module.");
+            break;
+        }
+        vecShaderStageCreateInfos.emplace_back(::std::move(shaderStageCreateInfo));
+    }
+
+    return vecShaderStageCreateInfos;
+}
+
 /// @brief Gets the unique indices between these two vector of indices.
 /// @param leftVecIndices The vector of indices on the left hand side.
 /// @param rightVecIndices The vector of indices on the right hand side.
@@ -1226,7 +1883,7 @@ bool celerique::vulkan::internal::Manager::physicalDeviceHasSuitableExtensions(V
     uint32_t physicalDeviceExtensionPropertiesCount = 0;
     result = vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &physicalDeviceExtensionPropertiesCount, nullptr);
     if (result != VK_SUCCESS) {
-        ::std::string errorMessage = "Error in calling vkEnumerateDeviceExtensionProperties"
+        ::std::string errorMessage = "Error in calling vkEnumerateDeviceExtensionProperties "
         "with result " + ::std::to_string(result);
         celeriqueLogError(errorMessage);
         throw ::std::runtime_error(errorMessage);
@@ -1234,7 +1891,7 @@ bool celerique::vulkan::internal::Manager::physicalDeviceHasSuitableExtensions(V
     ::std::vector<VkExtensionProperties> physicalDeviceExtensionProperties(physicalDeviceExtensionPropertiesCount);
     result = vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &physicalDeviceExtensionPropertiesCount,physicalDeviceExtensionProperties.data());
     if (result != VK_SUCCESS) {
-        ::std::string errorMessage = "Error in calling vkEnumerateDeviceExtensionProperties"
+        ::std::string errorMessage = "Error in calling vkEnumerateDeviceExtensionProperties "
         "with result " + ::std::to_string(result);
         celeriqueLogError(errorMessage);
         throw ::std::runtime_error(errorMessage);
