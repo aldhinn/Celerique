@@ -123,12 +123,12 @@ if (NOT TARGET CeleriqueEngineVulkanPlugin)
         exec_program(${GLSLC_EXE} ARGS
             ${CMAKE_CURRENT_SOURCE_DIR}/tests/triangle.vert -o
             ${CMAKE_CURRENT_SOURCE_DIR}/tests/triangle.vert.spv -O
-            --target-env=vulkan1.3
+            --target-env=vulkan1.2
         )
         exec_program(${GLSLC_EXE} ARGS
             ${CMAKE_CURRENT_SOURCE_DIR}/tests/triangle.frag -o
             ${CMAKE_CURRENT_SOURCE_DIR}/tests/triangle.frag.spv -O
-            --target-env=vulkan1.3
+            --target-env=vulkan1.2
         )
 
         # Drawing triangle testing.
