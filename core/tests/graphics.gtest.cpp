@@ -79,11 +79,11 @@ namespace celerique {
         /// @brief Mock graphics API instance.
         MockGraphicsApi mockGraphicsApi;
 
-        GTEST_ASSERT_EQ(mockGraphicsApi.addGraphicsPipelineConfig(::std::make_unique<PipelineConfig>()), 0);
+        GTEST_ASSERT_EQ(mockGraphicsApi.addGraphicsPipelineConfig(PipelineConfig()), 0);
         // Reset.
         mockGraphicsApi.clearGraphicsPipelineConfigs();
         // It should be back to 0.
-        GTEST_ASSERT_EQ(mockGraphicsApi.addGraphicsPipelineConfig(::std::make_unique<PipelineConfig>()), 0);
+        GTEST_ASSERT_EQ(mockGraphicsApi.addGraphicsPipelineConfig(PipelineConfig()), 0);
     }
 
     TEST_F(GraphicsUnitTestCpp, verifyUniqueIdGeneration) {
@@ -97,9 +97,7 @@ namespace celerique {
 
         // Generate IDs
         for (uint32_t i = 0; i < iterations; i++) {
-            vecGeneratedIds.push_back(mockGraphicsApi.addGraphicsPipelineConfig(
-                ::std::make_unique<PipelineConfig>()
-            ));
+            vecGeneratedIds.push_back(mockGraphicsApi.addGraphicsPipelineConfig(PipelineConfig()));
         }
 
         /// @brief The container for the IDs that were iterated over.

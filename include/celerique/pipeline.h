@@ -129,8 +129,8 @@ namespace celerique {
         ~ShaderProgram();
     };
 
-    /// @brief The base class to a pipeline configuration.
-    class CELERIQUE_SHARED_SYMBOL PipelineConfig {
+    /// @brief Describes a pipeline configuration.
+    class CELERIQUE_SHARED_SYMBOL PipelineConfig final {
     public:
         /// @brief Member init constructor.
         /// @param mapStageTypeToShaderProgram The map of shader stages to their corresponding shader programs.
@@ -146,10 +146,6 @@ namespace celerique {
     protected:
         /// @brief The map of shader stages to their corresponding shader programs.
         ::std::unordered_map<ShaderStage, ShaderProgram> _mapShaderStageToShaderProgram;
-
-    public:
-        /// @brief Virtual destructor.
-        virtual ~PipelineConfig() {}
     };
 }
 #endif

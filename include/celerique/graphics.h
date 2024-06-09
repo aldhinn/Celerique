@@ -71,10 +71,10 @@ namespace celerique {
     class IGraphicsAPI {
     public:
         /// @brief Add a graphics pipeline configuration.
-        /// @param ptrGraphicsPipelineConfig The unique pointer to the graphics pipeline configuration.
+        /// @param graphicsPipelineConfig The graphics pipeline configuration.
         /// @return The unique identifier to the graphics pipeline configuration that was just added.
         virtual PipelineConfigID addGraphicsPipelineConfig(
-            ::std::unique_ptr<PipelineConfig>&& ptrGraphicsPipelineConfig
+            PipelineConfig&& graphicsPipelineConfig
         );
         /// @brief Remove the graphics pipeline configuration specified.
         /// @param graphicsPipelineConfigId The identifier of the graphics pipeline configuration to be removed.
@@ -96,8 +96,8 @@ namespace celerique {
 
     // Protected member variables.
     protected:
-        /// @brief The map of config identifiers to the unique pointers to graphics pipeline configurations.
-        ::std::unordered_map<PipelineConfigID, ::std::unique_ptr<PipelineConfig>> _mapIdToPtrGraphicsPipelineConfig;
+        /// @brief The map of config identifiers to graphics pipeline configurations.
+        ::std::unordered_map<PipelineConfigID, PipelineConfig> _mapIdToGraphicsPipelineConfig;
         /// @brief The value of the next graphics pipeline config identifier value.
         PipelineConfigID _nextGraphicsPipelineConfigId = 0;
 

@@ -33,15 +33,15 @@ void ::celerique::IWindow::useGraphicsApi(::std::shared_ptr<IGraphicsAPI> ptrGra
 }
 
 /// @brief Add a graphics pipeline configuration.
-/// @param ptrGraphicsPipelineConfig The unique pointer to the graphics pipeline configuration.
+/// @param graphicsPipelineConfig The graphics pipeline configuration.
 /// @return The unique identifier to the graphics pipeline configuration that was just added.
 ::celerique::PipelineConfigID celerique::IGraphicsAPI::addGraphicsPipelineConfig(
-    ::std::unique_ptr<PipelineConfig>&& ptrGraphicsPipelineConfig
+    PipelineConfig&& graphicsPipelineConfig
 ) {
     /// @brief The current id of the pipeline config ID to be mapped.
     PipelineConfigID currentId = _nextGraphicsPipelineConfigId;
     // Add the graphics pipeline.
-    _mapIdToPtrGraphicsPipelineConfig[currentId] = ::std::move(ptrGraphicsPipelineConfig);
+    _mapIdToGraphicsPipelineConfig[currentId] = ::std::move(graphicsPipelineConfig);
     // Update next ID value.
     _nextGraphicsPipelineConfigId++;
     return currentId;
@@ -51,15 +51,15 @@ void ::celerique::IWindow::useGraphicsApi(::std::shared_ptr<IGraphicsAPI> ptrGra
 /// @param graphicsPipelineConfigId The identifier of the graphics pipeline configuration to be removed.
 void ::celerique::IGraphicsAPI::removeGraphicsPipelineConfig(PipelineConfigID graphicsPipelineConfigId) {
     /// @brief The iterator to the specified graphics pipeline configuration.
-    auto iteratorGraphicsPipelineConfig = _mapIdToPtrGraphicsPipelineConfig.find(graphicsPipelineConfigId);
+    auto iteratorGraphicsPipelineConfig = _mapIdToGraphicsPipelineConfig.find(graphicsPipelineConfigId);
     // Remove if found.
-    if (iteratorGraphicsPipelineConfig != _mapIdToPtrGraphicsPipelineConfig.end())
-        _mapIdToPtrGraphicsPipelineConfig.erase(iteratorGraphicsPipelineConfig);
+    if (iteratorGraphicsPipelineConfig != _mapIdToGraphicsPipelineConfig.end())
+        _mapIdToGraphicsPipelineConfig.erase(iteratorGraphicsPipelineConfig);
 }
 
 /// @brief Clear the collection of graphics pipeline configurations.
 void ::celerique::IGraphicsAPI::clearGraphicsPipelineConfigs() {
-    _mapIdToPtrGraphicsPipelineConfig.clear();
+    _mapIdToGraphicsPipelineConfig.clear();
     _nextGraphicsPipelineConfigId = 0;
 }
 

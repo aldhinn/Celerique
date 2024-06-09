@@ -42,7 +42,7 @@ namespace celerique {
             );
 
             _triangleGraphicsPipelineId = _ptrVulkanApi->addGraphicsPipelineConfig(
-                ::std::make_unique<PipelineConfig>(::std::move(mapShaderStageToShaderProgram))
+                PipelineConfig(::std::move(mapShaderStageToShaderProgram))
             );
         }
 

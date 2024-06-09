@@ -27,9 +27,9 @@ namespace celerique { namespace vulkan { namespace internal {
         static ::std::shared_ptr<GraphicsAPI> get();
 
         /// @brief Add a graphics pipeline configuration.
-        /// @param ptrGraphicsPipelineConfig The unique pointer to the graphics pipeline configuration.
+        /// @param graphicsPipelineConfig The graphics pipeline configuration.
         /// @return The unique identifier to the graphics pipeline configuration that was just added.
-        PipelineConfigID addGraphicsPipelineConfig(::std::unique_ptr<PipelineConfig>&& ptrGraphicsPipelineConfig) override;
+        PipelineConfigID addGraphicsPipelineConfig(PipelineConfig&& graphicsPipelineConfig) override;
         /// @brief Remove the graphics pipeline configuration specified.
         /// @param graphicsPipelineConfigId The identifier of the graphics pipeline configuration to be removed.
         void removeGraphicsPipelineConfig(PipelineConfigID graphicsPipelineConfigId) override;

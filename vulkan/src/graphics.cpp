@@ -32,15 +32,15 @@ License: Mozilla Public License 2.0. (See ./LICENSE).
 }
 
 /// @brief Add a graphics pipeline configuration.
-/// @param ptrGraphicsPipelineConfig The unique pointer to the graphics pipeline configuration.
+/// @param graphicsPipelineConfig The graphics pipeline configuration.
 /// @return The unique identifier to the graphics pipeline configuration that was just added.
 ::celerique::PipelineConfigID celerique::vulkan::internal::GraphicsAPI::addGraphicsPipelineConfig(
-    ::std::unique_ptr<PipelineConfig>&& ptrGraphicsPipelineConfig
+    PipelineConfig&& graphicsPipelineConfig
 ) {
     /// @brief The current id of the pipeline config ID to be mapped.
     PipelineConfigID currentId = _nextGraphicsPipelineConfigId;
-    refManager.addGraphicsPipeline(ptrGraphicsPipelineConfig.get(), currentId);
-    return IGraphicsAPI::addGraphicsPipelineConfig(::std::move(ptrGraphicsPipelineConfig));
+    refManager.addGraphicsPipeline(&graphicsPipelineConfig, currentId);
+    return IGraphicsAPI::addGraphicsPipelineConfig(::std::move(graphicsPipelineConfig));
 }
 
 /// @brief Remove the graphics pipeline configuration specified.
