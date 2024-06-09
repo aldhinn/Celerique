@@ -248,7 +248,7 @@ void ::celerique::vulkan::internal::Manager::removeGraphicsPipeline(PipelineConf
 /// @brief Clear the collection of graphics pipelines.
 void ::celerique::vulkan::internal::Manager::clearGraphicsPipelines() {
     ::std::unique_lock<::std::shared_mutex> writeLock(_sharedMutex);
-    // TODO: Implement.
+    destroyPipelines();
 }
 
 /// @brief Graphics draw call.

@@ -51,7 +51,10 @@ void ::celerique::vulkan::internal::GraphicsAPI::removeGraphicsPipelineConfig(Pi
 }
 
 /// @brief Clear the collection of graphics pipeline configurations.
-void ::celerique::vulkan::internal::GraphicsAPI::clearGraphicsPipelineConfigs() {}
+void ::celerique::vulkan::internal::GraphicsAPI::clearGraphicsPipelineConfigs() {
+    refManager.clearGraphicsPipelines();
+    IGraphicsAPI::clearGraphicsPipelineConfigs();
+}
 
 /// @brief Graphics draw call.
 /// @param graphicsPipelineConfigId The identifier for the graphics pipeline configuration to be used for drawing.
