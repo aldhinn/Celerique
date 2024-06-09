@@ -78,7 +78,6 @@ License: Mozilla Public License 2.0. (See ./LICENSE).
 /// container instance where the data is moving from.
 ::celerique::ShaderProgram::ShaderProgram(ShaderProgram&& other) : _size(other._size),
 _ptrBuffer(other._ptrBuffer) {
-    other._size = 0;
     other._ptrBuffer = nullptr;
 }
 
@@ -92,7 +91,6 @@ _ptrBuffer(other._ptrBuffer) {
 
     _size = other._size;
     _ptrBuffer = other._ptrBuffer;
-    other._size = 0;
     other._ptrBuffer = nullptr;
 
     return *this;
