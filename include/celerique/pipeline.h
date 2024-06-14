@@ -138,6 +138,10 @@ namespace celerique {
 
         /// @brief Access the shader program of a particular shader stage.
         /// @param stage The shader stage specified.
+        /// @return The const reference to the shader program container.
+        const ShaderProgram& shaderProgram(ShaderStage stage) const;
+        /// @brief Access the shader program of a particular shader stage.
+        /// @param stage The shader stage specified.
         /// @return The reference to the shader program container.
         ShaderProgram& shaderProgram(ShaderStage stage);
         /// @return The shader stages defined in this pipeline configuration.

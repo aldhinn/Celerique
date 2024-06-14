@@ -160,7 +160,7 @@ void ::celerique::vulkan::internal::Manager::addGraphicsPipeline(
     rasterizationInfo.depthBiasEnable = VK_FALSE;
 
     /// @brief Multi-sampling information.
-    VkPipelineMultisampleStateCreateInfo multiSamplingInfo{};
+    VkPipelineMultisampleStateCreateInfo multiSamplingInfo = {};
     multiSamplingInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
     multiSamplingInfo.sampleShadingEnable = VK_FALSE;
     multiSamplingInfo.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
@@ -191,7 +191,7 @@ void ::celerique::vulkan::internal::Manager::addGraphicsPipeline(
     colourBlendingInfo.blendConstants[3] = 0.0f;
 
     /// @brief Graphics Pipeline layout information.
-    VkPipelineLayoutCreateInfo graphicsPipelineLayoutInfo{};
+    VkPipelineLayoutCreateInfo graphicsPipelineLayoutInfo = {};
     graphicsPipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 
     /// @brief The handle to the graphics pipeline layout.
@@ -1780,8 +1780,8 @@ void celerique::vulkan::internal::Manager::drawOnWindow(Pointer windowHandle, Pi
 
     // Iterating over shader stages.
     for (ShaderStage shaderStage : vecShaderStages) {
-        /// @brief The reference to the shader program of the specified shader stage.
-        ShaderProgram& refShaderProgram = ptrPipelineConfig->shaderProgram(shaderStage);
+        /// @brief The const reference to the shader program of the specified shader stage.
+        const ShaderProgram& refShaderProgram = ptrPipelineConfig->shaderProgram(shaderStage);
         /// @brief The information about the shader module.
         VkShaderModuleCreateInfo shaderModuleInfo = {};
         shaderModuleInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
