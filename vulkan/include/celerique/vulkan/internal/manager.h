@@ -157,7 +157,7 @@ namespace celerique { namespace vulkan { namespace internal {
         /// @brief Draw graphics to a window.
         /// @param windowHandle The handle to the window to be drawn graphics on.
         /// @param graphicsPipelineConfigId The identifier for the graphics pipeline configuration to be used for drawing.
-        void drawOnWindow(Pointer windowHandle, PipelineConfigID graphicsPipeline);
+        void drawOnWindow(Pointer windowHandle, PipelineConfigID graphicsPipelineConfigId);
 
     // Pipeline helper functions.
     private:
@@ -165,7 +165,9 @@ namespace celerique { namespace vulkan { namespace internal {
         /// @param logicalDevice The handle to the logical device that is used to create the pipeline.
         /// @param ptrPipelineConfig The pointer to the pipeline configuration.
         /// @return The collection of vulkan pipeline shader stages.
-        ::std::vector<VkPipelineShaderStageCreateInfo> constructVecShaderStageCreateInfos(VkDevice logicalDevice, PipelineConfig* ptrPipelineConfig);
+        ::std::vector<VkPipelineShaderStageCreateInfo> constructVecShaderStageCreateInfos(
+            VkDevice logicalDevice, PipelineConfig* ptrPipelineConfig
+        );
 
     // Helper functions.
     public:
@@ -306,12 +308,14 @@ namespace celerique { namespace vulkan { namespace internal {
         ::std::unordered_map<PipelineConfigID, VkPipelineLayout> _mapGraphicsPipelineIdToPipelineLayout;
         /// @brief The map of a graphics pipeline identifier to its vulkan pipelines.
         ::std::unordered_map<PipelineConfigID, VkPipeline> _mapGraphicsPipelineIdToPipeline;
-        /// @brief The map of a logical device to the shader modules it created.
-        ::std::unordered_map<VkDevice, ::std::vector<VkShaderModule>> _mapLogicDevToVecShaderModules;
-        /// @brief The map of a logical device to the pipeline layouts it created.
-        ::std::unordered_map<VkDevice, ::std::vector<VkPipelineLayout>> _mapLogicDevToVecPipelineLayouts;
-        /// @brief The map of a logical device to the pipelines it created.
-        ::std::unordered_map<VkDevice, ::std::vector<VkPipeline>> _mapLogicDevToVecPipelines;
+        /// @brief The map of a graphics pipeline identifier to its shader modules.
+        ::std::unordered_map<PipelineConfigID, ::std::vector<VkShaderModule>> _mapGraphicsPipelineIdToVecShaderModules;
+        /// @brief The map of a shader module to the logical device that created it.
+        ::std::unordered_map<VkShaderModule, VkDevice> _mapShaderModuleToLogicDev;
+        /// @brief The map of a pipeline layout to the logical device that created it.
+        ::std::unordered_map<VkPipelineLayout, VkDevice> _mapPipelineLayoutToLogicDev;
+        /// @brief The map of a pipeline to the logical device that created it.
+        ::std::unordered_map<VkPipeline, VkDevice> _mapPipelineToLogicDev;
 
     // Validation layer objects.
     private:

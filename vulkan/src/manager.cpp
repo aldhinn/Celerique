@@ -72,19 +72,6 @@ void ::celerique::vulkan::internal::Manager::addGraphicsPipeline(
     // will settle on the first one for now.
     graphicsLogicalDevice = _vecGraphicsLogicDev[0];
 
-    /// @brief The iterator for the logical device and its pipeline layout vector.
-    auto iterLogicDevToVecPipelineLayouts = _mapLogicDevToVecPipelineLayouts.find(graphicsLogicalDevice);
-    // Initialize if it doesn't exist yet.
-    if (iterLogicDevToVecPipelineLayouts == _mapLogicDevToVecPipelineLayouts.end()) {
-        _mapLogicDevToVecPipelineLayouts[graphicsLogicalDevice] = ::std::vector<VkPipelineLayout>();
-    }
-    /// @brief The iterator for the logical device and its pipeline vector.
-    auto iterLogicDevToVecPipelines = _mapLogicDevToVecPipelines.find(graphicsLogicalDevice);
-    // Initialize if it doesn't exist yet.
-    if (iterLogicDevToVecPipelines == _mapLogicDevToVecPipelines.end()) {
-        _mapLogicDevToVecPipelines[graphicsLogicalDevice] = ::std::vector<VkPipeline>();
-    }
-
     /// @brief The container for the result code from the vulkan api.
     VkResult result;
 
@@ -102,6 +89,14 @@ void ::celerique::vulkan::internal::Manager::addGraphicsPipeline(
     ::std::vector<VkPipelineShaderStageCreateInfo> vecShaderStageCreateInfos = constructVecShaderStageCreateInfos(
         graphicsLogicalDevice, ptrGraphicsPipelineConfig
     );
+    /// @brief The vector of shader modules associated with the graphics pipeline configuration identifier.
+    ::std::vector<VkShaderModule> vecShaderModules;
+    vecShaderModules.reserve(vecShaderStageCreateInfos.size());
+    // Retrieve shader modules.
+    for (VkPipelineShaderStageCreateInfo shaderStageInfo : vecShaderStageCreateInfos) {
+        vecShaderModules.push_back(shaderStageInfo.module);
+    }
+    _mapGraphicsPipelineIdToVecShaderModules[currentId] = ::std::move(vecShaderModules);
 
     /// @brief The collection of vulkan dynamic states.
     VkDynamicState arrDynamicState[] = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR };
@@ -203,7 +198,7 @@ void ::celerique::vulkan::internal::Manager::addGraphicsPipeline(
         celeriqueLogError(errorMessage);
         throw ::std::runtime_error(errorMessage);
     }
-    _mapLogicDevToVecPipelineLayouts[graphicsLogicalDevice].push_back(graphicsPipelineLayout);
+    _mapPipelineLayoutToLogicDev[graphicsPipelineLayout] = graphicsLogicalDevice;
     _mapGraphicsPipelineIdToPipelineLayout[currentId] = graphicsPipelineLayout;
 
     /// @brief Graphics pipeline information.
@@ -232,7 +227,7 @@ void ::celerique::vulkan::internal::Manager::addGraphicsPipeline(
         celeriqueLogError(errorMessage);
         throw ::std::runtime_error(errorMessage);
     }
-    _mapLogicDevToVecPipelines[graphicsLogicalDevice].push_back(graphicsPipeline);
+    _mapPipelineToLogicDev[graphicsPipeline] = graphicsLogicalDevice;
     _mapGraphicsPipelineIdToPipeline[currentId] = graphicsPipeline;
 
     celeriqueLogDebug("Created graphics pipeline.");
@@ -242,13 +237,75 @@ void ::celerique::vulkan::internal::Manager::addGraphicsPipeline(
 /// @param graphicsPipelineConfigId The identifier of the graphics pipeline configuration to be removed.
 void ::celerique::vulkan::internal::Manager::removeGraphicsPipeline(PipelineConfigID graphicsPipelineConfigId) {
     ::std::unique_lock<::std::shared_mutex> writeLock(_sharedMutex);
-    // TODO: Implement.
+
+    /// @brief The handle to the graphics pipeline to be destroyed.
+    VkPipeline graphicsPipeline = _mapGraphicsPipelineIdToPipeline[graphicsPipelineConfigId];
+    /// @brief The graphics logical device that created the pipeline objects.
+    VkDevice graphicsLogicalDevice = _mapPipelineToLogicDev[graphicsPipeline];
+    // Destroy pipeline.
+    vkDestroyPipeline(graphicsLogicalDevice, graphicsPipeline, nullptr);
+    // Erase.
+    _mapGraphicsPipelineIdToPipeline.erase(graphicsPipelineConfigId);
+    _mapPipelineToLogicDev.erase(graphicsPipeline);
+
+    /// @brief The handle to the graphics pipeline layout to be destroyed.
+    VkPipelineLayout graphicsPipelineLayout = _mapGraphicsPipelineIdToPipelineLayout[graphicsPipelineConfigId];
+    // Destroy pipeline layout.
+    vkDestroyPipelineLayout(graphicsLogicalDevice, graphicsPipelineLayout, nullptr);
+    // Erase.
+    _mapGraphicsPipelineIdToPipelineLayout.erase(graphicsPipelineConfigId);
+    _mapPipelineLayoutToLogicDev.erase(graphicsPipelineLayout);
+
+    /// @brief The vector of shader modules associated with the graphics pipeline configuration identifier.
+    ::std::vector<VkShaderModule> vecShaderModules = _mapGraphicsPipelineIdToVecShaderModules[graphicsPipelineConfigId];
+    // Iterate and destroy.
+    for (VkShaderModule shaderModule : vecShaderModules) {
+        vkDestroyShaderModule(graphicsLogicalDevice, shaderModule, nullptr);
+        // Erase reference.
+        _mapShaderModuleToLogicDev.erase(shaderModule);
+    }
+    // Erase.
+    _mapGraphicsPipelineIdToVecShaderModules.erase(graphicsPipelineConfigId);
 }
 
 /// @brief Clear the collection of graphics pipelines.
 void ::celerique::vulkan::internal::Manager::clearGraphicsPipelines() {
     ::std::unique_lock<::std::shared_mutex> writeLock(_sharedMutex);
-    destroyPipelines();
+
+    // Iterate and destroy each object related to graphics pipelines.
+    for (const auto& pairGraphicsPipelineIdToPipeline : _mapGraphicsPipelineIdToPipeline) {
+        /// @brief The graphics pipeline configuration identifier.
+        PipelineConfigID graphicsPipelineConfigId = pairGraphicsPipelineIdToPipeline.first;
+
+        /// @brief The handle to the graphics pipeline to be destroyed.
+        VkPipeline graphicsPipeline = _mapGraphicsPipelineIdToPipeline[graphicsPipelineConfigId];
+        /// @brief The graphics logical device that created the pipeline objects.
+        VkDevice graphicsLogicalDevice = _mapPipelineToLogicDev[graphicsPipeline];
+        // Destroy pipeline.
+        vkDestroyPipeline(graphicsLogicalDevice, graphicsPipeline, nullptr);
+        // Erase.
+        _mapGraphicsPipelineIdToPipeline.erase(graphicsPipelineConfigId);
+        _mapPipelineToLogicDev.erase(graphicsPipeline);
+
+        /// @brief The handle to the graphics pipeline layout to be destroyed.
+        VkPipelineLayout graphicsPipelineLayout = _mapGraphicsPipelineIdToPipelineLayout[graphicsPipelineConfigId];
+        // Destroy pipeline layout.
+        vkDestroyPipelineLayout(graphicsLogicalDevice, graphicsPipelineLayout, nullptr);
+        // Erase.
+        _mapGraphicsPipelineIdToPipelineLayout.erase(graphicsPipelineConfigId);
+        _mapPipelineLayoutToLogicDev.erase(graphicsPipelineLayout);
+
+        /// @brief The vector of shader modules associated with the graphics pipeline configuration identifier.
+        ::std::vector<VkShaderModule> vecShaderModules = _mapGraphicsPipelineIdToVecShaderModules[graphicsPipelineConfigId];
+        // Iterate and destroy.
+        for (VkShaderModule shaderModule : vecShaderModules) {
+            vkDestroyShaderModule(graphicsLogicalDevice, shaderModule, nullptr);
+            // Erase reference.
+            _mapShaderModuleToLogicDev.erase(shaderModule);
+        }
+        // Erase.
+        _mapGraphicsPipelineIdToVecShaderModules.erase(graphicsPipelineConfigId);
+    }
 }
 
 /// @brief Graphics draw call.
@@ -653,44 +710,38 @@ void celerique::vulkan::internal::Manager::destroySyncObjects() {
 
 /// @brief Destroy all pipeline related objects.
 void celerique::vulkan::internal::Manager::destroyPipelines() {
-    // Iterate over all pipeline layouts.
-    for (const auto& pairLogicDevToVecPipelineLayout : _mapLogicDevToVecPipelineLayouts) {
-        /// @brief The logical device creator.
-        VkDevice logicalDevice = pairLogicDevToVecPipelineLayout.first;
-        /// @brief The collection of pipeline layouts to be destroyed.
-        ::std::vector<VkPipelineLayout> vecPipelineLayouts = pairLogicDevToVecPipelineLayout.second;
-        // Iterate over and destroy.
-        for (VkPipelineLayout pipelineLayout : vecPipelineLayouts) {
-            vkDestroyPipelineLayout(logicalDevice, pipelineLayout, nullptr);
-        }
-    }
-    _mapLogicDevToVecPipelineLayouts.clear();
-    _mapGraphicsPipelineIdToPipelineLayout.clear();
     // Iterate over pipeline instances.
-    for (const auto& pairLogicDevToVecPipelines : _mapLogicDevToVecPipelines) {
+    for (const auto& pairPipelineToLogicDev : _mapPipelineToLogicDev) {
+        /// @brief The pipeline to be destroyed.
+        VkPipeline pipeline = pairPipelineToLogicDev.first;
         /// @brief The logical device creator.
-        VkDevice logicalDevice = pairLogicDevToVecPipelines.first;
-        /// @brief The collection of pipelines to be destroyed.
-        ::std::vector<VkPipeline> vecPipelines = pairLogicDevToVecPipelines.second;
-        // Iterate over and destroy.
-        for (VkPipeline pipeline : vecPipelines) {
-            vkDestroyPipeline(logicalDevice, pipeline, nullptr);
-        }
+        VkDevice logicalDevice = pairPipelineToLogicDev.second;
+        // Destroy.
+        vkDestroyPipeline(logicalDevice, pipeline, nullptr);
     }
-    _mapLogicDevToVecPipelines.clear();
+    _mapPipelineToLogicDev.clear();
     _mapGraphicsPipelineIdToPipeline.clear();
-    // Iterate over shader modules.
-    for (const auto& pairLogicDevToVecShaderModules : _mapLogicDevToVecShaderModules) {
+    // Iterate over all pipeline layouts.
+    for (const auto& pairPipelineToLogicDev : _mapPipelineLayoutToLogicDev) {
+        /// @brief The pipeline layout to be destroyed.
+        VkPipelineLayout pipelineLayout = pairPipelineToLogicDev.first;
         /// @brief The logical device creator.
-        VkDevice logicalDevice = pairLogicDevToVecShaderModules.first;
-        /// @brief The collection of shader modules to be destroyed.
-        ::std::vector<VkShaderModule> vecShaderModules = pairLogicDevToVecShaderModules.second;
-        // Iterate over and destroy.
-        for (VkShaderModule shaderModule : vecShaderModules) {
-            vkDestroyShaderModule(logicalDevice, shaderModule, nullptr);
-        }
+        VkDevice logicalDevice = pairPipelineToLogicDev.second;
+        // Destroy.
+        vkDestroyPipelineLayout(logicalDevice, pipelineLayout, nullptr);
     }
-    _mapLogicDevToVecShaderModules.clear();
+    _mapPipelineLayoutToLogicDev.clear();
+    _mapGraphicsPipelineIdToPipelineLayout.clear();
+    // Iterate over shader modules.
+    for (const auto& pairShaderModuleToLogicDev : _mapShaderModuleToLogicDev) {
+        /// @brief The shader module to be destroyed.
+        VkShaderModule shaderModule = pairShaderModuleToLogicDev.first;
+        /// @brief The logical device creator.
+        VkDevice logicalDevice = pairShaderModuleToLogicDev.second;
+        // Destroy.
+        vkDestroyShaderModule(logicalDevice, shaderModule, nullptr);
+    }
+    _mapShaderModuleToLogicDev.clear();
 
     celeriqueLogTrace("Destroyed all pipeline related objects.");
 }
@@ -1770,14 +1821,6 @@ void celerique::vulkan::internal::Manager::drawOnWindow(Pointer windowHandle, Pi
     ::std::vector<VkPipelineShaderStageCreateInfo> vecShaderStageCreateInfos;
     vecShaderStageCreateInfos.reserve(vecShaderStages.size());
 
-    /// @brief The iterator for the logical device and its shader module vector.
-    auto iterLogicDevToVecShaderModules = _mapLogicDevToVecShaderModules.find(logicalDevice);
-    // Initialize if it doesn't exist yet.
-    if (iterLogicDevToVecShaderModules == _mapLogicDevToVecShaderModules.end()) {
-        _mapLogicDevToVecShaderModules[logicalDevice] = ::std::vector<VkShaderModule>();
-        _mapLogicDevToVecShaderModules[logicalDevice].reserve(vecShaderStages.size());
-    }
-
     // Iterating over shader stages.
     for (ShaderStage shaderStage : vecShaderStages) {
         /// @brief The const reference to the shader program of the specified shader stage.
@@ -1796,7 +1839,7 @@ void celerique::vulkan::internal::Manager::drawOnWindow(Pointer windowHandle, Pi
             celeriqueLogError(errorMessage);
             throw ::std::runtime_error(errorMessage);
         }
-        _mapLogicDevToVecShaderModules[logicalDevice].push_back(shaderModule);
+        _mapShaderModuleToLogicDev[shaderModule] = logicalDevice;
 
         /// @brief The information about the vulkan pipeline shader stage.
         VkPipelineShaderStageCreateInfo shaderStageCreateInfo = {};
