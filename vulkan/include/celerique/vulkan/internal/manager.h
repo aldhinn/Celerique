@@ -50,7 +50,15 @@ namespace celerique { namespace vulkan { namespace internal {
 
         /// @brief Graphics draw call.
         /// @param graphicsPipelineConfigId The identifier for the graphics pipeline configuration to be used for drawing.
-        void draw(PipelineConfigID graphicsPipelineConfigId);
+        /// @param numVerticesToDraw The number of vertices to be drawn.
+        /// @param vertexStride The size of the individual vertex input.
+        /// @param numVertexElements The number of individual vertices to draw.
+        /// @param ptrVertexBuffer The pointer to the vertex buffer.
+        /// @param ptrIndexBuffer The pointer to the index buffer.
+        void draw(
+            PipelineConfigID graphicsPipelineConfigId, size_t numVerticesToDraw, size_t vertexStride,
+            size_t numVertexElements, void* ptrVertexBuffer, uint32_t* ptrIndexBuffer
+        );
 
         /// @brief Add the window handle to the graphics API.
         /// @param uiProtocol The UI protocol used to create UI elements.
@@ -77,6 +85,8 @@ namespace celerique { namespace vulkan { namespace internal {
     private:
         /// @brief Destroy all sync objects.
         void destroySyncObjects();
+        /// @brief Destroy all mesh buffer handlers.
+        void destroyMeshBufferHandlers();
         /// @brief Destroy all pipeline related objects.
         void destroyPipelines();
         /// @brief Destroy all swapchain frame buffers.
@@ -127,6 +137,9 @@ namespace celerique { namespace vulkan { namespace internal {
         /// @brief Create the command buffers for the window.
         /// @param windowHandle The UI protocol native pointer of the window to be registered.
         void createCommandBuffers(Pointer windowHandle);
+        /// @brief Create the containers for the mesh buffer handles.
+        /// @param windowHandle The UI protocol native pointer of the window to be registered.
+        void createContainersForMeshBufferHandles(Pointer windowHandle);
         /// @brief Create synchronization objects.
         /// @param windowHandle The UI protocol native pointer of the window to be registered.
         void createSyncObjects(Pointer windowHandle);
@@ -157,7 +170,28 @@ namespace celerique { namespace vulkan { namespace internal {
         /// @brief Draw graphics to a window.
         /// @param windowHandle The handle to the window to be drawn graphics on.
         /// @param graphicsPipelineConfigId The identifier for the graphics pipeline configuration to be used for drawing.
-        void drawOnWindow(Pointer windowHandle, PipelineConfigID graphicsPipelineConfigId);
+        /// @param numVerticesToDraw The number of vertices to be drawn.
+        /// @param vertexStride The size of the individual vertex input.
+        /// @param numVertexElements The number of individual vertices to draw.
+        /// @param ptrVertexBuffer The pointer to the vertex buffer.
+        /// @param ptrIndexBuffer The pointer to the index buffer.
+        void drawOnWindow(
+            Pointer windowHandle, PipelineConfigID graphicsPipelineConfigId, size_t numVerticesToDraw,
+            size_t vertexStride, size_t numVertexElements, void* ptrVertexBuffer, uint32_t* ptrIndexBuffer
+        );
+        /// @brief Fill the mesh buffer with vertices and indices to be drawn.
+        /// @param numVerticesToDraw The number of vertices to be drawn.
+        /// @param vertexStride The size of the individual vertex input.
+        /// @param numVertexElements The number of individual vertices to draw.
+        /// @param ptrVertexBuffer The pointer to the vertex buffer.
+        /// @param ptrIndexBuffer The pointer to the index buffer.
+        /// @param graphicsLogicalDevice The graphics logical device used to draw the window.
+        /// @param ptrMeshBuffer The pointer to the handle to the buffer containing vertex and index data.
+        /// @param ptrMeshBufferMemory The pointer to the handle to the memory of the mesh buffer in the GPU.
+        void fillMeshBuffer(
+            size_t numVerticesToDraw, size_t vertexStride, size_t numVertexElements, void* ptrVertexBuffer, uint32_t* ptrIndexBuffer,
+            VkDevice graphicsLogicalDevice, VkBuffer* ptrMeshBuffer, VkDeviceMemory* ptrMeshBufferMemory
+        );
 
     // Pipeline helper functions.
     private:
@@ -167,6 +201,48 @@ namespace celerique { namespace vulkan { namespace internal {
         /// @return The collection of vulkan pipeline shader stages.
         ::std::vector<VkPipelineShaderStageCreateInfo> constructVecShaderStageCreateInfos(
             VkDevice logicalDevice, PipelineConfig* ptrPipelineConfig
+        );
+        /// @brief Construct a collection of vertex attribute descriptions.
+        /// @param ptrPipelineConfig The pointer to the pipeline configuration.
+        /// @return The collection of vertex attribute descriptions.
+        ::std::vector<VkVertexInputAttributeDescription> constructVecVertexAttributeDescriptions(
+            PipelineConfig* ptrPipelineConfig
+        );
+
+    // Memory helper functions.
+    private:
+        /// @brief Create a buffer object and allocate memory.
+        /// @param logicalDevice The logical device used to create the resources.
+        /// @param deviceSize The size of the memory to be allocated.
+        /// @param usageFlags The buffer's usage.
+        /// @param memoryPropertyFlags The memory property flags raised.
+        /// @param ptrBuffer The pointer to the buffer handle.
+        /// @param ptrBufferMemory The pointer to the buffer memory handle.
+        void createBufferAndAllocateMemory(
+            VkDevice logicalDevice,
+            VkDeviceSize deviceSize,
+            VkBufferUsageFlags usageFlags,
+            VkMemoryPropertyFlags memoryPropertyFlags,
+            VkBuffer* ptrBuffer,
+            VkDeviceMemory* ptrBufferMemory
+        );
+        /// @brief Find the memory type index of a given physical device.
+        /// @param physicalDevice The physical device specified.
+        /// @param typeFilter The bit field types that are suitable.
+        /// @param propertiesFlags The property flags raised.
+        /// @return The memory type index value.
+        uint32_t findMemoryTypeIndex(
+            VkPhysicalDevice physicalDevice, uint32_t typeFilter, VkMemoryPropertyFlags propertiesFlags
+        );
+        /// @brief Copy the contents of a source vulkan buffer to a destination vulkan buffer.
+        /// @param logicalDevice The handle to the logical device to facilitate memory copying.
+        /// @param commandQueue The queue used for command submissions.
+        /// @param srcBuffer The buffer where the data is coming from.
+        /// @param dstBuffer The buffer where the data is to be copied to.
+        /// @param size The size of the data to be moved.
+        void copyVulkanBufferData(
+            VkDevice logicalDevice, VkQueue commandQueue,
+            VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size
         );
 
     // Helper functions.
@@ -186,6 +262,27 @@ namespace celerique { namespace vulkan { namespace internal {
         /// @return Vulkan api result.
         VkResult vkCreateWaylandSurfaceKHR(Pointer ptrCreateInfo, VkAllocationCallbacks* ptrAllocator, VkSurfaceKHR* ptrSurface);
 #endif
+        /// @brief Begin a single time use command.
+        /// @param logicalDevice The handle to the logical device that manages the command.
+        /// @return The handle to the single time use command buffer.
+        VkCommandBuffer beginSingleTimeCommand(VkDevice logicalDevice);
+        /// @brief End the single time use command.
+        /// @param logicalDevice The handle to the logical device that manages the command.
+        /// @param singleTimeCommandBuffer The handle to the single time use command buffer.
+        /// @param commandQueue The queue used for command submissions.
+        void endSingleTimeCommand(VkDevice logicalDevice, VkCommandBuffer singleTimeCommandBuffer, VkQueue commandQueue);
+        /// @brief Select the command pool to use for a single time use command.
+        /// @param logicalDevice The handle to the logical device that manages the command.
+        /// @return The handle to the command pool to use.
+        VkCommandPool selectSingleTimeCommandPool(VkDevice logicalDevice);
+        /// @brief Select the best queue for graphics command submissions.
+        /// @param graphicsLogicalDevice The specified graphics logical device.
+        /// @return The handle to the graphics queue.
+        VkQueue selectGraphicsQueue(VkDevice graphicsLogicalDevice);
+        /// @brief Select the best queue for present command submissions.
+        /// @param graphicsLogicalDevice The specified graphics logical device.
+        /// @return The handle to the present queue.
+        VkQueue selectPresentQueue(VkDevice graphicsLogicalDevice);
 
     // Vulkan queries.
     private:
@@ -262,6 +359,8 @@ namespace celerique { namespace vulkan { namespace internal {
         ::std::vector<VkPhysicalDevice> _vecAvailablePhysDev;
         /// @brief The collection of graphics logical devices used.
         ::std::vector<VkDevice> _vecGraphicsLogicDev;
+        /// @brief The map of a logical device to its physical device handle.
+        ::std::unordered_map<VkDevice, VkPhysicalDevice> _mapLogicDevToPhysDev;
         /// @brief The map of a logical device to its command pools.
         ::std::unordered_map<VkDevice, ::std::vector<VkCommandPool>> _mapLogicDevToVecCommandPools;
         /// @brief The map of a graphics logical device to its graphics queues.
@@ -295,6 +394,10 @@ namespace celerique { namespace vulkan { namespace internal {
         ::std::unordered_map<Pointer, ::std::vector<VkCommandBuffer>> _mapWindowToVecCommandBuffers;
         /// @brief The map of a window to the current frame index that it is rendering.
         ::std::unordered_map<Pointer, size_t> _mapWindowToCurrentFrameIndex;
+        /// @brief The map of a window to its mesh buffer handles.
+        ::std::unordered_map<Pointer, ::std::vector<VkBuffer>> _mapWindowToVecMeshBuffers;
+        /// @brief The map of a window to its mesh buffer memory handles.
+        ::std::unordered_map<Pointer, ::std::vector<VkDeviceMemory>> _mapWindowToVecMeshBufferMemories;
         /// @brief The map of a window to its image available semaphores.
         ::std::unordered_map<Pointer, ::std::vector<VkSemaphore>> _mapWindowToVecImageAvailableSemaphores;
         /// @brief The map of a window to its render finished semaphores.

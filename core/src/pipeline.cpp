@@ -106,8 +106,12 @@ _ptrBuffer(other._ptrBuffer) {
 
 /// @brief Member init constructor.
 /// @param mapStageTypeToShaderProgram The map of shader stages to their corresponding shader programs.
-::celerique::PipelineConfig::PipelineConfig(::std::unordered_map<ShaderStage, ShaderProgram>&& mapShaderStageToShaderProgram) :
-_mapShaderStageToShaderProgram(::std::move(mapShaderStageToShaderProgram)) {}
+/// @param vecVertexInputLayouts The collection of layouts of vertex inputs.
+::celerique::PipelineConfig::PipelineConfig(
+    ::std::unordered_map<ShaderStage, ShaderProgram>&& mapShaderStageToShaderProgram,
+    ::std::vector<InputLayout>&& vecVertexInputLayouts
+) : _mapShaderStageToShaderProgram(::std::move(mapShaderStageToShaderProgram)),
+_vecVertexInputLayouts(::std::move(vecVertexInputLayouts)) {}
 
 /// @brief A shader program container that contains no shader.
 static ::celerique::ShaderProgram emptyShaderProgram(0, nullptr);
@@ -142,4 +146,48 @@ const ::celerique::ShaderProgram& celerique::PipelineConfig::shaderProgram(Shade
         vecStages.push_back(shaderStage);
     }
     return vecStages;
+}
+
+/// @brief The collection of layouts of vertex inputs.
+/// @return The const reference to `_vecVertexInputLayouts`.
+const ::std::vector<::celerique::InputLayout>& celerique::PipelineConfig::vecVertexInputLayouts() const {
+    return _vecVertexInputLayouts;
+}
+
+/// @brief The collection of layouts of vertex inputs.
+/// @return The reference to `_vecVertexInputLayouts`.
+::std::vector<::celerique::InputLayout>& celerique::PipelineConfig::vecVertexInputLayouts() {
+    return _vecVertexInputLayouts;
+}
+
+/// @brief Calculate and return the stride value.
+/// @return The stride value.
+size_t celerique::PipelineConfig::stride() const {
+    /// @brief The variable that collects how much stride there should be.
+    size_t stride = 0;
+
+    // Iterate over input layouts.
+    for (const InputLayout& inputLayout : _vecVertexInputLayouts) {
+        /// @brief The size of each data type.
+        size_t dataTypeSize = 0;
+        // Determine the size of the type.
+        switch(inputLayout.inputType) {
+        case CELERIQUE_PIPELINE_INPUT_TYPE_FLOAT:
+            dataTypeSize = sizeof(float);
+            break;
+        case CELERIQUE_PIPELINE_INPUT_TYPE_INT:
+            dataTypeSize = sizeof(int);
+            break;
+        case CELERIQUE_PIPELINE_INPUT_TYPE_DOUBLE:
+            dataTypeSize = sizeof(double);
+            break;
+        case CELERIQUE_PIPELINE_INPUT_TYPE_BOOLEAN:
+            dataTypeSize = sizeof(bool);
+            break;
+        }
+
+        stride += dataTypeSize * inputLayout.numElements;
+    }
+
+    return stride;
 }

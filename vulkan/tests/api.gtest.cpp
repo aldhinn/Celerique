@@ -47,7 +47,7 @@ namespace celerique { namespace vulkan {
     public:
         MOCK_METHOD2(addWindow, void(UiProtocol, Pointer));
         MOCK_METHOD1(removeWindow, void(Pointer));
-        MOCK_METHOD1(draw, void(PipelineConfigID));
+        MOCK_METHOD6(draw, void(PipelineConfigID, size_t, size_t, size_t, void*, uint32_t*));
 
         MockGraphicsAPI() {
             EXPECT_CALL(*this, addWindow).WillRepeatedly(::testing::Return());

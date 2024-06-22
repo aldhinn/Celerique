@@ -16,7 +16,6 @@ License: Mozilla Public License 2.0. (See ./LICENSE).
 
 /// @brief The type of programming language the shader was written on.
 typedef uint8_t CeleriqueShaderSrcLang;
-
 /// @brief Null value for `CeleriqueShaderSrcLang` type.
 #define CELERIQUE_SHADER_SRC_LANG_NULL                                                      0x00
 
@@ -27,7 +26,6 @@ typedef uint8_t CeleriqueShaderSrcLang;
 
 /// @brief The type of a pipeline shader stage.
 typedef uint8_t CeleriqueShaderStage;
-
 /// @brief Null value for `CeleriqueShaderStage` type.
 #define CELERIQUE_SHADER_STAGE_NULL                                                         0x00
 
@@ -55,6 +53,20 @@ typedef uint8_t CeleriqueShaderStage;
 /// @brief The type of the pipeline configuration unique identifier.
 typedef uintptr_t CeleriquePipelineConfigID;
 
+/// @brief The type of a particular pipeline input variable.
+typedef uint8_t CeleriquePipelineInputType;
+/// @brief Null value for `CeleriquePipelineInputType` type.
+#define CELERIQUE_PIPELINE_INPUT_TYPE_NULL                                                  0x00
+
+/// @brief Float pipeline input type.
+#define CELERIQUE_PIPELINE_INPUT_TYPE_FLOAT                                                 0x01
+/// @brief Integer pipeline input type.
+#define CELERIQUE_PIPELINE_INPUT_TYPE_INT                                                   0x02
+/// @brief Double pipeline input type.
+#define CELERIQUE_PIPELINE_INPUT_TYPE_DOUBLE                                                0x03
+/// @brief Boolean pipeline input type.
+#define CELERIQUE_PIPELINE_INPUT_TYPE_BOOLEAN                                               0x04
+
 // Begin C++ Only Region.
 #if defined(__cplusplus)
 #include <unordered_map>
@@ -70,9 +82,13 @@ namespace celerique {
     typedef CeleriqueShaderSrcLang ShaderSrcLang;
     /// @brief Type for a byte character.
     typedef CeleriqueByte Byte;
+    /// @brief The type of a particular pipeline input variable.
+    typedef CeleriquePipelineInputType PipelineInputType;
 
     /// @brief The container to a loaded shader program.
     class ShaderProgram;
+    /// @brief A layout of a particular shader input variable.
+    struct InputLayout;
 
     /// @brief Load a shader program from the file path of the binary specified.
     /// @param binaryPath The file path of the binary where the shader is to be loaded from.
@@ -134,7 +150,11 @@ namespace celerique {
     public:
         /// @brief Member init constructor.
         /// @param mapStageTypeToShaderProgram The map of shader stages to their corresponding shader programs.
-        PipelineConfig(::std::unordered_map<ShaderStage, ShaderProgram>&& mapShaderStageToShaderProgram = {});
+        /// @param vecVertexInputLayouts The collection of layouts of vertex inputs.
+        PipelineConfig(
+            ::std::unordered_map<ShaderStage, ShaderProgram>&& mapShaderStageToShaderProgram = {},
+            ::std::vector<InputLayout>&& vecVertexInputLayouts = {}
+        );
 
         /// @brief Access the shader program of a particular shader stage.
         /// @param stage The shader stage specified.
@@ -147,9 +167,36 @@ namespace celerique {
         /// @return The shader stages defined in this pipeline configuration.
         ::std::vector<ShaderStage> vecStages() const;
 
+        /// @brief The collection of layouts of vertex inputs.
+        /// @return The const reference to `_vecVertexInputLayouts`.
+        const ::std::vector<InputLayout>& vecVertexInputLayouts() const;
+        /// @brief The collection of layouts of vertex inputs.
+        /// @return The reference to `_vecVertexInputLayouts`.
+        ::std::vector<InputLayout>& vecVertexInputLayouts();
+
+        /// @brief Calculate and return the stride.
+        /// @return The stride value.
+        size_t stride() const;
+
     protected:
         /// @brief The map of shader stages to their corresponding shader programs.
         ::std::unordered_map<ShaderStage, ShaderProgram> _mapShaderStageToShaderProgram;
+        /// @brief The collection of layouts of vertex inputs.
+        ::std::vector<InputLayout> _vecVertexInputLayouts;
+    };
+
+    /// @brief A layout of a particular shader input variable.
+    struct InputLayout {
+        /// @brief An index used to identify a specific input in the shader.
+        size_t location;
+        /// @brief The byte offset of the input variable within a particular batch of input variables.
+        size_t offset;
+        /// @brief The number of elements this variable contains. (Default 1).
+        size_t numElements = 1;
+        /// @brief The type of the input variable.
+        PipelineInputType inputType;
+        /// @brief The name of the variable.
+        const char* name = "";
     };
 }
 #endif

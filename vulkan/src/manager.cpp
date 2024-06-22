@@ -75,9 +75,28 @@ void ::celerique::vulkan::internal::Manager::addGraphicsPipeline(
     /// @brief The container for the result code from the vulkan api.
     VkResult result;
 
+    /// @brief The description of the vertex input binding.
+    VkVertexInputBindingDescription vertexBindingDescription = {};
+    vertexBindingDescription.binding = 0;
+    vertexBindingDescription.stride = ptrGraphicsPipelineConfig->stride();
+    vertexBindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+
+    /// @brief The collection of vertex attribute descriptions.
+    ::std::vector<VkVertexInputAttributeDescription> vecVertexAttributeDescriptions = constructVecVertexAttributeDescriptions(
+        ptrGraphicsPipelineConfig
+    );
+
     /// @brief Information about how the input buffer layout.
     VkPipelineVertexInputStateCreateInfo vertexInputStateInfo = {};
     vertexInputStateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+    // Assign only if there are vertex input layout specified in the pipeline configuration.
+    if (!ptrGraphicsPipelineConfig->vecVertexInputLayouts().empty()) {
+        vertexInputStateInfo.vertexBindingDescriptionCount = 1;
+        vertexInputStateInfo.pVertexBindingDescriptions = &vertexBindingDescription;
+        vertexInputStateInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(vecVertexAttributeDescriptions.size());
+        vertexInputStateInfo.pVertexAttributeDescriptions = vecVertexAttributeDescriptions.data();
+        celeriqueLogTrace("Vertex layout specified.");
+    }
 
     /// @brief Input assembly stage information.
     VkPipelineInputAssemblyStateCreateInfo inputAssemblyInfo = {};
@@ -310,7 +329,15 @@ void ::celerique::vulkan::internal::Manager::clearGraphicsPipelines() {
 
 /// @brief Graphics draw call.
 /// @param graphicsPipelineConfigId The identifier for the graphics pipeline configuration to be used for drawing.
-void ::celerique::vulkan::internal::Manager::draw(PipelineConfigID graphicsPipelineConfigId) {
+/// @param numVerticesToDraw The number of vertices to be drawn.
+/// @param vertexStride The size of the individual vertex input.
+/// @param numVertexElements The number of individual vertices to draw.
+/// @param ptrVertexBuffer The pointer to the vertex buffer.
+/// @param ptrIndexBuffer The pointer to the index buffer.
+void ::celerique::vulkan::internal::Manager::draw(
+    PipelineConfigID graphicsPipelineConfigId, size_t numVerticesToDraw, size_t vertexStride,
+    size_t numVertexElements, void* ptrVertexBuffer, uint32_t* ptrIndexBuffer
+) {
     ::std::shared_lock<::std::shared_mutex> readLock(_sharedMutex);
 
     /// @brief The container for the thread handles that executes the draw calls for each window.
@@ -321,7 +348,8 @@ void ::celerique::vulkan::internal::Manager::draw(PipelineConfigID graphicsPipel
         Pointer windowHandle = pairWindowToSurface.first;
         // Execute drawing on a different thread.
         ::std::thread drawCallThread(::std::bind(
-            &Manager::drawOnWindow, this, windowHandle, graphicsPipelineConfigId
+            &Manager::drawOnWindow, this, windowHandle, graphicsPipelineConfigId, numVerticesToDraw,
+            vertexStride, numVertexElements, ptrVertexBuffer, ptrIndexBuffer
         ));
         // Collect thread handle.
         vecDrawCallThreads.emplace_back(::std::move(drawCallThread));
@@ -377,6 +405,7 @@ void celerique::vulkan::internal::Manager::addWindow(UiProtocol uiProtocol, Poin
     createRenderPass(windowHandle);
     createSwapChainFrameBuffers(windowHandle);
     createCommandBuffers(windowHandle);
+    createContainersForMeshBufferHandles(windowHandle);
     createSyncObjects(windowHandle);
 
     celeriqueLogDebug("Registered window.");
@@ -432,6 +461,28 @@ void celerique::vulkan::internal::Manager::removeWindow(Pointer windowHandle) {
 
     _mapWindowToVecCommandBuffers.erase(windowHandle);
     celeriqueLogTrace("Removed command buffer references for the window.");
+
+    /// @brief The mesh buffer memory handles to be freed.
+    const ::std::vector<VkDeviceMemory>& vecMeshBufferMemories = _mapWindowToVecMeshBufferMemories[windowHandle];
+    // Iterate over memories and free.
+    for (VkDeviceMemory meshBufferMemory : vecMeshBufferMemories) {
+        // Free if not null.
+        if (meshBufferMemory != nullptr) {
+            vkFreeMemory(graphicsLogicalDevice, meshBufferMemory, nullptr);
+        }
+    }
+    _mapWindowToVecMeshBufferMemories.erase(windowHandle);
+    /// @brief The mesh buffers to be destroyed.
+    const ::std::vector<VkBuffer>& vecMeshBuffers = _mapWindowToVecMeshBuffers[windowHandle];
+    // Iterate over buffers and destroy.
+    for (VkBuffer meshBuffer : vecMeshBuffers) {
+        // Destroy if not null.
+        if (meshBuffer != nullptr) {
+            vkDestroyBuffer(graphicsLogicalDevice, meshBuffer, nullptr);
+        }
+    }
+    _mapWindowToVecMeshBuffers.erase(windowHandle);
+    celeriqueLogTrace("Removed mesh buffer handles for the window.");
 
     /// @brief The swapchain frame buffers to be destroyed.
     const ::std::vector<VkFramebuffer>& vecSwapChainFrameBuffers = _mapWindowToVecSwapChainFrameBuffers[windowHandle];
@@ -502,6 +553,7 @@ celerique::vulkan::internal::Manager::~Manager() {
     }
 
     destroySyncObjects();
+    destroyMeshBufferHandlers();
     destroyPipelines();
     destroySwapChainFrameBuffers();
     destroyRenderPass();
@@ -708,6 +760,46 @@ void celerique::vulkan::internal::Manager::destroySyncObjects() {
     celeriqueLogTrace("Destroyed all sync objects.");
 }
 
+/// @brief Destroy all mesh buffer handlers.
+void celerique::vulkan::internal::Manager::destroyMeshBufferHandlers() {
+    // Iterate over device memory handles and destroy.
+    for (const auto& pairWindowToVecMeshBufferMemories : _mapWindowToVecMeshBufferMemories) {
+        /// @brief The handle to the window.
+        Pointer windowHandle = pairWindowToVecMeshBufferMemories.first;
+        /// @brief The handle to the graphics logical device assigned to the window.
+        VkDevice graphicsLogicalDevice = _mapWindowToGraphicsLogicDev[windowHandle];
+        /// @brief The collection of mesh buffer memories to be freed.
+        const ::std::vector<VkDeviceMemory>& vecMeshBufferMemories = pairWindowToVecMeshBufferMemories.second;
+        // Iterate over and free.
+        for (VkDeviceMemory meshBufferMemory : vecMeshBufferMemories) {
+            // Free if not null.
+            if (meshBufferMemory != nullptr) {
+                vkFreeMemory(graphicsLogicalDevice, meshBufferMemory, nullptr);
+            }
+        }
+    }
+    _mapWindowToVecMeshBufferMemories.clear();
+    // Iterate over buffer handles and destroy.
+    for (const auto& pairWindowToVecMeshBuffers : _mapWindowToVecMeshBuffers) {
+        /// @brief The handle to the window.
+        Pointer windowHandle = pairWindowToVecMeshBuffers.first;
+        /// @brief The handle to the graphics logical device assigned to the window.
+        VkDevice graphicsLogicalDevice = _mapWindowToGraphicsLogicDev[windowHandle];
+        /// @brief The collection of mesh buffers to be destroyed.
+        const ::std::vector<VkBuffer>& vecMeshBuffers = _mapWindowToVecMeshBuffers[windowHandle];
+        // Iterate over and destroy.
+        for (VkBuffer meshBuffer : vecMeshBuffers) {
+            // Destroy if not null.
+            if (meshBuffer != nullptr) {
+                vkDestroyBuffer(graphicsLogicalDevice, meshBuffer, nullptr);
+            }
+        }
+    }
+    _mapWindowToVecMeshBuffers.clear();
+
+    celeriqueLogTrace("Destroyed all mesh buffer handlers.");
+}
+
 /// @brief Destroy all pipeline related objects.
 void celerique::vulkan::internal::Manager::destroyPipelines() {
     // Iterate over pipeline instances.
@@ -839,6 +931,7 @@ void celerique::vulkan::internal::Manager::destroyLogicalDevices() {
         vkDestroyDevice(logicalDevice, nullptr);
     }
     _vecGraphicsLogicDev.clear();
+    _mapLogicDevToPhysDev.clear();
 
     celeriqueLogTrace("Destroyed logical devices.");
 }
@@ -1051,6 +1144,7 @@ VkDevice celerique::vulkan::internal::Manager::createGraphicsLogicalDevice(Point
     }
     _mapWindowToGraphicsLogicDev[windowHandle] = graphicsLogicalDevice;
     _vecGraphicsLogicDev.push_back(graphicsLogicalDevice);
+    _mapLogicDevToPhysDev[graphicsLogicalDevice] = physicalDevice;
     celeriqueLogTrace("Created graphics logical device.");
 
     /// @brief The container for the graphics queues.
@@ -1188,7 +1282,7 @@ void celerique::vulkan::internal::Manager::createSwapChain(Pointer windowHandle,
     /// @brief Contains handle to the swapchain.
     VkSwapchainKHR swapChain;
     result = vkCreateSwapchainKHR(graphicsLogicalDevice, &swapChainInfo, nullptr, &swapChain);
-    if (result != VkResult::VK_SUCCESS) {
+    if (result != VK_SUCCESS) {
         ::std::string errorMessage = "Failed to create swapchain "
         "with result " + ::std::to_string(result);
         celeriqueLogError(errorMessage);
@@ -1424,6 +1518,17 @@ void celerique::vulkan::internal::Manager::createCommandBuffers(Pointer windowHa
     celeriqueLogTrace("Created command buffers.");
 }
 
+/// @brief Create the containers for the mesh buffer handles.
+/// @param windowHandle The UI protocol native pointer of the window to be registered.
+void celerique::vulkan::internal::Manager::createContainersForMeshBufferHandles(Pointer windowHandle) {
+    /// @brief The number of frames to be rendered.
+    size_t numFrames = _mapWindowToVecSwapChainFrameBuffers[windowHandle].size();
+    _mapWindowToVecMeshBufferMemories[windowHandle] = ::std::vector<VkDeviceMemory>(numFrames, nullptr);
+    _mapWindowToVecMeshBuffers[windowHandle] = ::std::vector<VkBuffer>(numFrames, nullptr);
+
+    celeriqueLogTrace("Created mesh buffer handles.");
+}
+
 /// @brief Create synchronization objects.
 /// @param windowHandle The UI protocol native pointer of the window to be registered.
 void celerique::vulkan::internal::Manager::createSyncObjects(Pointer windowHandle) {
@@ -1644,7 +1749,15 @@ uint32_t celerique::vulkan::internal::Manager::determineMinImageCount(const VkSu
 /// @brief Draw graphics to a window.
 /// @param windowHandle The handle to the window to be drawn graphics on.
 /// @param graphicsPipelineConfigId The identifier for the graphics pipeline configuration to be used for drawing.
-void celerique::vulkan::internal::Manager::drawOnWindow(Pointer windowHandle, PipelineConfigID graphicsPipelineConfigId) {
+/// @param numVerticesToDraw The number of vertices to be drawn.
+/// @param vertexStride The size of the individual vertex input.
+/// @param numVertexElements The number of individual vertices to draw.
+/// @param ptrVertexBuffer The pointer to the vertex buffer.
+/// @param ptrIndexBuffer The pointer to the index buffer.
+void celerique::vulkan::internal::Manager::drawOnWindow(
+    Pointer windowHandle, PipelineConfigID graphicsPipelineConfigId, size_t numVerticesToDraw,
+    size_t vertexStride, size_t numVertexElements, void* ptrVertexBuffer, uint32_t* ptrIndexBuffer
+) {
     ::std::shared_lock<::std::shared_mutex> readLock(_sharedMutex);
 
     /// @brief The container for the result code from the vulkan api.
@@ -1704,6 +1817,16 @@ void celerique::vulkan::internal::Manager::drawOnWindow(Pointer windowHandle, Pi
         throw ::std::runtime_error(errorMessage);
     }
 
+    /// @brief The reference to the handle to the buffer containing vertex and index data.
+    VkBuffer& refMeshBuffer = _mapWindowToVecMeshBuffers[windowHandle][currentFrameIndex];
+    /// @brief The reference to the handle to the memory of the mesh buffer in the GPU.
+    VkDeviceMemory& refMeshBufferMemory = _mapWindowToVecMeshBufferMemories[windowHandle][currentFrameIndex];
+
+    fillMeshBuffer(
+        numVerticesToDraw, vertexStride, numVertexElements, ptrVertexBuffer, ptrIndexBuffer,
+        graphicsLogicalDevice, &refMeshBuffer, &refMeshBufferMemory
+    );
+
     /// @brief Information about how the command buffer begins recording.
     VkCommandBufferBeginInfo commandBufferBeginInfo = {};
     commandBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -1737,8 +1860,26 @@ void celerique::vulkan::internal::Manager::drawOnWindow(Pointer windowHandle, Pi
     // Bind the command buffer to the graphics pipeline.
     vkCmdBindPipeline(vecCommandBuffers[currentFrameIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
 
-    // TODO: Implement draw using vertex and index buffers.
-    vkCmdDraw(vecCommandBuffers[currentFrameIndex], 3, 1, 0, 0);
+    /// @brief The collection of offset values for the mesh buffer.
+    VkDeviceSize arrOffsets[] = {0};
+    // Vertex buffer specified.
+    if (ptrVertexBuffer != nullptr) {
+        vkCmdBindVertexBuffers(vecCommandBuffers[currentFrameIndex], 0, 1, &refMeshBuffer, arrOffsets);
+    }
+
+    // Index buffer specified.
+    if (ptrIndexBuffer != nullptr) {
+        // Bind the indices.
+        vkCmdBindIndexBuffer(
+            vecCommandBuffers[currentFrameIndex], refMeshBuffer,
+            static_cast<VkDeviceSize>(vertexStride * numVertexElements), VK_INDEX_TYPE_UINT32
+        );
+        vkCmdDrawIndexed(vecCommandBuffers[currentFrameIndex], static_cast<uint32_t>(numVerticesToDraw), 1, 0, 0, 0);
+    }
+    // No index buffer specified.
+    else {
+        vkCmdDraw(vecCommandBuffers[currentFrameIndex], static_cast<uint32_t>(numVerticesToDraw), 1, 0, 0);
+    }
 
     // End the render pass.
     vkCmdEndRenderPass(vecCommandBuffers[currentFrameIndex]);
@@ -1767,10 +1908,7 @@ void celerique::vulkan::internal::Manager::drawOnWindow(Pointer windowHandle, Pi
     graphicsQueueSubmitInfo.pSignalSemaphores = &vecRenderFinishedSemaphores[currentFrameIndex];
 
     // Submit to the graphics queue. Signals the in-flight fence when graphics rendering is done.
-    result = vkQueueSubmit(
-        _mapGraphicsLogicDevToVecGraphicsQueues[graphicsLogicalDevice][0], // TODO: Implement graphics queue selection.
-        1, &graphicsQueueSubmitInfo, vecInFlightFences[currentFrameIndex]
-    );
+    result = vkQueueSubmit(selectGraphicsQueue(graphicsLogicalDevice), 1, &graphicsQueueSubmitInfo, vecInFlightFences[currentFrameIndex]);
     if (result != VK_SUCCESS) {
         ::std::string errorMessage = "Failed to submit to graphics queue with result " + ::std::to_string(result);
         celeriqueLogError(errorMessage);
@@ -1788,10 +1926,7 @@ void celerique::vulkan::internal::Manager::drawOnWindow(Pointer windowHandle, Pi
 
     // Waits for the graphics rendering before
     // presenting the image back to the swapchain.
-    result = vkQueuePresentKHR(
-        _mapGraphicsLogicDevToVecPresentQueues[graphicsLogicalDevice][0], // TODO: Implement present queue selection.
-        &presentInfo
-    );
+    result = vkQueuePresentKHR(selectPresentQueue(graphicsLogicalDevice), &presentInfo);
     if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) {
         // TODO: Implement update or re-create swapchain.
         return;
@@ -1803,6 +1938,110 @@ void celerique::vulkan::internal::Manager::drawOnWindow(Pointer windowHandle, Pi
 
     // Update the current frame index.
     _mapWindowToCurrentFrameIndex[windowHandle] = (currentFrameIndex + 1) % vecSwapChainFrameBuffers.size();
+}
+
+/// @brief Fill the mesh buffer with vertices and indices to be drawn.
+/// @param numVerticesToDraw The number of vertices to be drawn.
+/// @param vertexStride The size of the individual vertex input.
+/// @param numVertexElements The number of individual vertices to draw.
+/// @param ptrVertexBuffer The pointer to the vertex buffer.
+/// @param ptrIndexBuffer The pointer to the index buffer.
+/// @param graphicsLogicalDevice The graphics logical device used to draw the window.
+/// @param ptrMeshBuffer The pointer to the handle to the buffer containing vertex and index data.
+/// @param ptrMeshBufferMemory The pointer to the handle to the memory of the mesh buffer in the GPU.
+void celerique::vulkan::internal::Manager::fillMeshBuffer(
+    size_t numVerticesToDraw, size_t vertexStride, size_t numVertexElements, void* ptrVertexBuffer, uint32_t* ptrIndexBuffer,
+    VkDevice graphicsLogicalDevice, VkBuffer* ptrMeshBuffer, VkDeviceMemory* ptrMeshBufferMemory
+) {
+    // Destroy the old data if they exist.
+    if (*ptrMeshBufferMemory != nullptr) {
+        vkFreeMemory(graphicsLogicalDevice, *ptrMeshBufferMemory, nullptr);
+        *ptrMeshBufferMemory = nullptr;
+    }
+    if (*ptrMeshBuffer != nullptr) {
+        vkDestroyBuffer(graphicsLogicalDevice, *ptrMeshBuffer, nullptr);
+        *ptrMeshBuffer = nullptr;
+    }
+
+    // Return immediately as there is nothing to fill.
+    if (numVerticesToDraw == 0 || vertexStride == 0 || numVertexElements == 0 || ptrVertexBuffer == nullptr) return;
+
+    /// @brief The variable that stores the result of any vulkan function called.
+    VkResult result;
+
+    /// @brief The size of the buffer to be allocated.
+    VkDeviceSize bufferSize;
+    // Without index buffer.
+    if (ptrIndexBuffer == nullptr) {
+        bufferSize = static_cast<VkDeviceSize>(vertexStride * numVertexElements);
+    }
+    // With index buffer.
+    else {
+        bufferSize = static_cast<VkDeviceSize>(
+            vertexStride * numVertexElements + sizeof(uint32_t) * numVerticesToDraw
+        );
+    }
+
+    /// @brief The CPU accessible objects buffer.
+    VkBuffer stagingObjectsBuffer = nullptr;
+    /// @brief The CPU accessible objects buffer memory.
+    VkDeviceMemory stagingObjectsBufferMemory = nullptr;
+    // Create resources for staging buffer and memory.
+    createBufferAndAllocateMemory(
+        graphicsLogicalDevice, bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+        &stagingObjectsBuffer, &stagingObjectsBufferMemory
+    );
+
+    /// @brief The pointer to the CPU accessible buffer of `stagingObjectsBuffer`.
+    void* ptrStagingDataSrc = nullptr;
+    result = vkMapMemory(graphicsLogicalDevice, stagingObjectsBufferMemory, 0, bufferSize, 0, &ptrStagingDataSrc);
+    if (result != VK_SUCCESS) {
+        ::std::string errorMessage = "Failed to map memory with result " + ::std::to_string(result);
+        celeriqueLogError(errorMessage);
+        throw ::std::runtime_error(errorMessage);
+    }
+    // Fill in with the vertices data.
+    memcpy(ptrStagingDataSrc, ptrVertexBuffer, vertexStride * numVertexElements);
+    // If index buffer specified,
+    if (ptrIndexBuffer != nullptr) {
+        // Append the data buffer with the indices data.
+        memcpy(
+            reinterpret_cast<void*>(
+                reinterpret_cast<Pointer>(ptrStagingDataSrc) +
+                static_cast<Pointer>(vertexStride * numVertexElements)
+            ),
+            ptrIndexBuffer, numVerticesToDraw * sizeof(uint32_t)
+        );
+    }
+    vkUnmapMemory(graphicsLogicalDevice, stagingObjectsBufferMemory);
+
+    if (ptrIndexBuffer != nullptr) {
+        createBufferAndAllocateMemory(
+            graphicsLogicalDevice, bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT |
+            VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+            ptrMeshBuffer, ptrMeshBufferMemory
+        );
+    } else {
+        createBufferAndAllocateMemory(
+            graphicsLogicalDevice, bufferSize,
+            VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+            ptrMeshBuffer, ptrMeshBufferMemory
+        );
+    }
+
+    /// @brief The handle to the physical device that the logical device represents.
+    VkPhysicalDevice physicalDevice = _mapLogicDevToPhysDev[graphicsLogicalDevice];
+    /// @brief The command queue used for copy submission. (will be using the graphics queue).
+    VkQueue copyCommandQueue = selectGraphicsQueue(graphicsLogicalDevice);
+
+    copyVulkanBufferData(graphicsLogicalDevice, copyCommandQueue, stagingObjectsBuffer, *ptrMeshBuffer, bufferSize);
+
+    // Destroy staging resources.
+    vkFreeMemory(graphicsLogicalDevice, stagingObjectsBufferMemory, nullptr);
+    vkDestroyBuffer(graphicsLogicalDevice, stagingObjectsBuffer, nullptr);
 }
 
 /// @brief Construct a collection shader stage create information structures.
@@ -1878,6 +2117,238 @@ void celerique::vulkan::internal::Manager::drawOnWindow(Pointer windowHandle, Pi
     return vecShaderStageCreateInfos;
 }
 
+/// @brief Construct a collection of vertex attribute descriptions.
+/// @param ptrPipelineConfig The pointer to the pipeline configuration.
+/// @return The collection of vertex attribute descriptions.
+::std::vector<VkVertexInputAttributeDescription> celerique::vulkan::internal::Manager::constructVecVertexAttributeDescriptions(
+    PipelineConfig* ptrPipelineConfig
+) {
+    /// @brief The collection of input layouts.
+    const ::std::vector<InputLayout>& vecInputLayouts = ptrPipelineConfig->vecVertexInputLayouts();
+    /// @brief The collection of vertex attribute descriptions.
+    ::std::vector<VkVertexInputAttributeDescription> vecVertexAttributeDescriptions;
+    vecVertexAttributeDescriptions.reserve(vecInputLayouts.size());
+
+    // Populate vertex attributes.
+    for (const InputLayout& inputLayout : vecInputLayouts) {
+        VkVertexInputAttributeDescription vertexAttributeDescription = {};
+        vertexAttributeDescription.binding = 0;
+        vertexAttributeDescription.location = inputLayout.location;
+        vertexAttributeDescription.offset = inputLayout.offset;
+
+        switch(inputLayout.inputType) {
+        case CELERIQUE_PIPELINE_INPUT_TYPE_FLOAT: {
+            switch(inputLayout.numElements) {
+            case 1:
+                vertexAttributeDescription.format = VK_FORMAT_R32_SFLOAT;
+                break;
+            case 2:
+                vertexAttributeDescription.format = VK_FORMAT_R32G32_SFLOAT;
+                break;
+            case 3:
+                vertexAttributeDescription.format = VK_FORMAT_R32G32B32_SFLOAT;
+                break;
+            case 4:
+                vertexAttributeDescription.format = VK_FORMAT_R32G32B32A32_SFLOAT;
+                break;
+            default:
+                celeriqueLogWarning(
+                    "inputLayout.numElements = " + ::std::to_string(inputLayout.numElements) +
+                    " is invalid."
+                );
+            }
+        } break;
+
+        case CELERIQUE_PIPELINE_INPUT_TYPE_INT: {
+            switch(inputLayout.numElements) {
+            case 1:
+                vertexAttributeDescription.format = VK_FORMAT_R32_SINT;
+                break;
+            case 2:
+                vertexAttributeDescription.format = VK_FORMAT_R32G32_SINT;
+                break;
+            case 3:
+                vertexAttributeDescription.format = VK_FORMAT_R32G32B32_SINT;
+                break;
+            case 4:
+                vertexAttributeDescription.format = VK_FORMAT_R32G32B32A32_SINT;
+                break;
+            default:
+                celeriqueLogWarning(
+                    "inputLayout.numElements = " + ::std::to_string(inputLayout.numElements) +
+                    " is invalid."
+                );
+            }
+        } break;
+
+        case CELERIQUE_PIPELINE_INPUT_TYPE_DOUBLE: {
+            switch(inputLayout.numElements) {
+            case 1:
+                vertexAttributeDescription.format = VK_FORMAT_R64_SFLOAT;
+                break;
+            case 2:
+                vertexAttributeDescription.format = VK_FORMAT_R64G64_SFLOAT;
+                break;
+            case 3:
+                vertexAttributeDescription.format = VK_FORMAT_R64G64B64_SFLOAT;
+                break;
+            case 4:
+                vertexAttributeDescription.format = VK_FORMAT_R64G64B64A64_SFLOAT;
+                break;
+            default:
+                celeriqueLogWarning(
+                    "inputLayout.numElements = " + ::std::to_string(inputLayout.numElements) +
+                    " is invalid."
+                );
+            }
+        } break;
+
+        case CELERIQUE_PIPELINE_INPUT_TYPE_BOOLEAN: {
+            switch(inputLayout.numElements) {
+            case 1:
+                vertexAttributeDescription.format = VK_FORMAT_R8_UINT;
+                break;
+            case 2:
+                vertexAttributeDescription.format = VK_FORMAT_R8G8_UINT;
+                break;
+            case 3:
+                vertexAttributeDescription.format = VK_FORMAT_R8G8B8_UINT;
+                break;
+            case 4:
+                vertexAttributeDescription.format = VK_FORMAT_R8G8B8A8_UINT;
+                break;
+            default:
+                celeriqueLogWarning(
+                    "inputLayout.numElements = " + ::std::to_string(inputLayout.numElements) +
+                    " is invalid."
+                );
+            }
+        } break;
+
+        default:
+            celeriqueLogWarning(
+                "Unknown vertex attribute format for input type of value: " +
+                ::std::to_string(inputLayout.inputType)
+            );
+        }
+
+        vecVertexAttributeDescriptions.emplace_back(vertexAttributeDescription);
+    }
+
+    return vecVertexAttributeDescriptions;
+}
+
+/// @brief Create a buffer object and allocate memory.
+/// @param logicalDevice The logical device used to create the resources.
+/// @param deviceSize The size of the memory to be allocated.
+/// @param usageFlags The buffer's usage.
+/// @param memoryPropertyFlags The memory property flags raised.
+/// @param ptrBuffer The pointer to the buffer handle.
+/// @param ptrBufferMemory The pointer to the buffer memory handle.
+void celerique::vulkan::internal::Manager::createBufferAndAllocateMemory(
+    VkDevice logicalDevice,
+    VkDeviceSize deviceSize,
+    VkBufferUsageFlags usageFlags,
+    VkMemoryPropertyFlags memoryPropertyFlags,
+    VkBuffer* ptrBuffer,
+    VkDeviceMemory* ptrBufferMemory
+) {
+    /// @brief The variable that stores the result of any vulkan function called.
+    VkResult result;
+
+    /// @brief Information about the buffer to be created.
+    VkBufferCreateInfo bufferCreateInfo = {};
+    bufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+    bufferCreateInfo.size = deviceSize;
+    bufferCreateInfo.usage = usageFlags;
+    bufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+    // Create the buffer.
+    result = vkCreateBuffer(logicalDevice, &bufferCreateInfo, nullptr, ptrBuffer);
+    if(result != VK_SUCCESS) {
+        ::std::string errorMessage = "Failed to create buffer with result " + ::std::to_string(result);
+        celeriqueLogError(errorMessage);
+        throw ::std::runtime_error(errorMessage);
+    }
+
+    /// @brief The memory requirements for the buffer.
+    VkMemoryRequirements memoryRequirements = {};
+    // Retrieve buffer's memory requirements.
+    vkGetBufferMemoryRequirements(logicalDevice, *ptrBuffer, &memoryRequirements);
+
+    /// @brief The handle to the physical device that the logical device represents.
+    VkPhysicalDevice physicalDevice = _mapLogicDevToPhysDev[logicalDevice];
+
+    /// @brief Information about the memory to be allocated.
+    VkMemoryAllocateInfo memoryAllocateInfo = {};
+    memoryAllocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    memoryAllocateInfo.allocationSize = memoryRequirements.size;
+    memoryAllocateInfo.memoryTypeIndex = findMemoryTypeIndex(
+        physicalDevice, memoryRequirements.memoryTypeBits, memoryPropertyFlags
+    );
+
+    // Allocate memory.
+    result = vkAllocateMemory(logicalDevice, &memoryAllocateInfo, nullptr, ptrBufferMemory);
+    if (result != VK_SUCCESS) {
+        ::std::string errorMessage = "Failed to allocate memory with result " + ::std::to_string(result);
+        celeriqueLogError(errorMessage);
+        throw ::std::runtime_error(errorMessage);
+    }
+
+    // Bind the vertex buffer to the memory.
+    result = vkBindBufferMemory(logicalDevice, *ptrBuffer, *ptrBufferMemory, 0);
+    if (result != VK_SUCCESS) {
+        ::std::string errorMessage = "Failed to bind buffer memory with result " + ::std::to_string(result);
+        celeriqueLogError(errorMessage);
+        throw ::std::runtime_error(errorMessage);
+    }
+}
+
+/// @brief Find the memory type index of a given physical device.
+/// @param physicalDevice The physical device specified.
+/// @param typeFilter The bit field types that are suitable.
+/// @param memoryPropertyFlags The memory property flags raised.
+/// @return The memory type index value.
+uint32_t celerique::vulkan::internal::Manager::findMemoryTypeIndex(
+    VkPhysicalDevice physicalDevice, uint32_t typeFilter, VkMemoryPropertyFlags memoryPropertyFlags
+) {
+    /// @brief The container for the memory properties of the specified physical device.
+    VkPhysicalDeviceMemoryProperties memoryProperties = {};
+    vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memoryProperties);
+
+    // Find a memory type that is suitable for the buffer.
+    for (uint32_t i = 0; i < memoryProperties.memoryTypeCount; i++) {
+        if (typeFilter & (1 << i) && (memoryProperties.memoryTypes[i].propertyFlags & memoryPropertyFlags) == memoryPropertyFlags) {
+            return i;
+        }
+    }
+
+    const char* errorMessage = "Failed to find a suitable memory type index.";
+    celeriqueLogError(errorMessage);
+    throw ::std::runtime_error(errorMessage);
+}
+
+/// @brief Copy the contents of a source vulkan buffer to a destination vulkan buffer.
+/// @param logicalDevice The handle to the logical device to facilitate memory copying.
+/// @param commandQueue The queue used for command submissions.
+/// @param srcBuffer The buffer where the data is coming from.
+/// @param dstBuffer The buffer where the data is to be copied to.
+/// @param size The size of the data to be moved.
+void celerique::vulkan::internal::Manager::copyVulkanBufferData(
+    VkDevice logicalDevice, VkQueue commandQueue,
+    VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size
+) {
+    /// @brief The command buffer for copying.
+    VkCommandBuffer copyCommandBuffer = beginSingleTimeCommand(logicalDevice);
+
+    /// @brief Information about how the copy happens.
+    VkBufferCopy copyRegion = {};
+    copyRegion.size = size;
+    vkCmdCopyBuffer(copyCommandBuffer, srcBuffer, dstBuffer, 1, &copyRegion);
+
+    endSingleTimeCommand(logicalDevice, copyCommandBuffer, commandQueue);
+}
+
 /// @brief Gets the unique indices between these two vector of indices.
 /// @param leftVecIndices The vector of indices on the left hand side.
 /// @param rightVecIndices The vector of indices on the right hand side.
@@ -1914,6 +2385,113 @@ VkResult celerique::vulkan::internal::Manager::vkCreateWaylandSurfaceKHR(Pointer
     }
 }
 #endif
+
+/// @brief Begin a single time use command.
+/// @param logicalDevice The handle to the logical device that manages the command.
+/// @return The handle to the single time use command buffer.
+VkCommandBuffer celerique::vulkan::internal::Manager::beginSingleTimeCommand(VkDevice logicalDevice) {
+    /// @brief The variable that stores the result of any vulkan function called.
+    VkResult result;
+
+    /// @brief Information about the command
+    VkCommandBufferAllocateInfo singleTimeCommandInfo = {};
+    singleTimeCommandInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    singleTimeCommandInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    singleTimeCommandInfo.commandPool = selectSingleTimeCommandPool(logicalDevice);
+    singleTimeCommandInfo.commandBufferCount = 1;
+
+    /// @brief The handle to the command buffer that will record the command.
+    VkCommandBuffer singleTimeCommandBuffer;
+    result = vkAllocateCommandBuffers(logicalDevice, &singleTimeCommandInfo, &singleTimeCommandBuffer);
+    if (result != VK_SUCCESS) {
+        ::std::string errorMessage = "Failed to create single time use command buffer with result " + ::std::to_string(result);
+        celeriqueLogError(errorMessage);
+        throw ::std::runtime_error(errorMessage);
+    }
+        
+    /// @brief How the command buffer begins recording.
+    VkCommandBufferBeginInfo commandBeginInfo = {};
+    commandBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    commandBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+
+    // Begin recording.
+    result = vkBeginCommandBuffer(singleTimeCommandBuffer, &commandBeginInfo);
+    if (result != VK_SUCCESS) {
+        ::std::string errorMessage = "Failed to begin command recording with result " + ::std::to_string(result);
+        celeriqueLogError(errorMessage);
+        throw ::std::runtime_error(errorMessage);
+    }
+
+    return singleTimeCommandBuffer;
+}
+
+/// @brief End the single time use command.
+/// @param logicalDevice The handle to the logical device that manages the command.
+/// @param singleTimeCommandBuffer The handle to the single time use command buffer.
+/// @param commandQueue The queue used for command submissions.
+void celerique::vulkan::internal::Manager::endSingleTimeCommand(
+    VkDevice logicalDevice, VkCommandBuffer singleTimeCommandBuffer, VkQueue commandQueue
+) {
+    /// @brief The variable that stores the result of any vulkan function called.
+    VkResult result;
+
+    // End recording.
+    result = vkEndCommandBuffer(singleTimeCommandBuffer);
+    if (result != VK_SUCCESS) {
+        ::std::string errorMessage = "Failed to end command recording with result " + ::std::to_string(result);
+        celeriqueLogError(errorMessage);
+        throw ::std::runtime_error(errorMessage);
+    }
+
+    /// @brief Command submission info.
+    VkSubmitInfo submitInfo{};
+    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    submitInfo.commandBufferCount = 1;
+    submitInfo.pCommandBuffers = &singleTimeCommandBuffer;
+
+    result = vkQueueSubmit(commandQueue, 1, &submitInfo, VK_NULL_HANDLE);
+    if (result != VK_SUCCESS) {
+        ::std::string errorMessage = "Failed to submit command with result " + ::std::to_string(result);
+        celeriqueLogError(errorMessage);
+        throw ::std::runtime_error(errorMessage);
+    }
+
+    // Wait until the queue is done.
+    result = vkQueueWaitIdle(commandQueue);
+    if (result != VK_SUCCESS) {
+        ::std::string errorMessage = "Failed to wait for queue with result " + ::std::to_string(result);
+        celeriqueLogError(errorMessage);
+        throw ::std::runtime_error(errorMessage);
+    }
+
+    // Free this command buffer as it will
+    // no longer be used outside of this scope
+    vkFreeCommandBuffers(logicalDevice, selectSingleTimeCommandPool(logicalDevice), 1, &singleTimeCommandBuffer);
+}
+
+/// @brief Select the command pool to use for a single time use command.
+/// @param logicalDevice The handle to the logical device that manages the command.
+/// @return The handle to the command pool to use.
+VkCommandPool celerique::vulkan::internal::Manager::selectSingleTimeCommandPool(VkDevice logicalDevice) {
+    // TODO: Select the best command pool. Will return the first one for now.
+    return _mapLogicDevToVecCommandPools[logicalDevice][0];
+}
+
+/// @brief Select the best queue for graphics command submissions.
+/// @param graphicsLogicalDevice The specified graphics logical device.
+/// @return The handle to the graphics queue.
+VkQueue celerique::vulkan::internal::Manager::selectGraphicsQueue(VkDevice graphicsLogicalDevice) {
+    // TODO: Select the best graphics queue. Will return the first one for now.
+    return _mapGraphicsLogicDevToVecGraphicsQueues[graphicsLogicalDevice][0];
+}
+
+/// @brief Select the best queue for present command submissions.
+/// @param graphicsLogicalDevice The specified graphics logical device.
+/// @return The handle to the present queue.
+VkQueue celerique::vulkan::internal::Manager::selectPresentQueue(VkDevice graphicsLogicalDevice) {
+    // TODO: Select the best present queue. Will return the first one for now.
+    return _mapGraphicsLogicDevToVecPresentQueues[graphicsLogicalDevice][0];
+}
 
 /// @brief Queries the vulkan API whether the physical device has suitable extension.
 /// @param physicalDevice The handle to the physical device.

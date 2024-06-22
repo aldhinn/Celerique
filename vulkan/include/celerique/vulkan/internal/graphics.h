@@ -38,7 +38,15 @@ namespace celerique { namespace vulkan { namespace internal {
 
         /// @brief Graphics draw call.
         /// @param graphicsPipelineConfigId The identifier for the graphics pipeline configuration to be used for drawing.
-        void draw(PipelineConfigID graphicsPipelineConfigId) override;
+        /// @param numVerticesToDraw The number of vertices to be drawn.
+        /// @param vertexStride The size of the individual vertex input.
+        /// @param numVertexElements The number of individual vertices to draw.
+        /// @param ptrVertexBuffer The pointer to the vertex buffer.
+        /// @param ptrIndexBuffer The pointer to the index buffer.
+        void draw(
+            PipelineConfigID graphicsPipelineConfigId, size_t numVerticesToDraw, size_t vertexStride = 0,
+            size_t numVertexElements = 0, void* ptrVertexBuffer = nullptr, uint32_t* ptrIndexBuffer = nullptr
+        ) override;
 
         /// @brief Add the window handle to the graphics API.
         /// @param uiProtocol The UI protocol used to create UI elements.

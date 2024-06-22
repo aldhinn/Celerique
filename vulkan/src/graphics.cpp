@@ -58,8 +58,16 @@ void ::celerique::vulkan::internal::GraphicsAPI::clearGraphicsPipelineConfigs() 
 
 /// @brief Graphics draw call.
 /// @param graphicsPipelineConfigId The identifier for the graphics pipeline configuration to be used for drawing.
-void ::celerique::vulkan::internal::GraphicsAPI::draw(PipelineConfigID graphicsPipelineConfigId) {
-    refManager.draw(graphicsPipelineConfigId);
+/// @param numVerticesToDraw The number of vertices to be drawn.
+/// @param vertexStride The size of the individual vertex input.
+/// @param numVertexElements The number of individual vertices to draw.
+/// @param ptrVertexBuffer The pointer to the vertex buffer.
+/// @param ptrIndexBuffer The pointer to the index buffer.
+void ::celerique::vulkan::internal::GraphicsAPI::draw(
+    PipelineConfigID graphicsPipelineConfigId, size_t numVerticesToDraw, size_t vertexStride,
+    size_t numVertexElements, void* ptrVertexBuffer, uint32_t* ptrIndexBuffer
+) {
+    refManager.draw(graphicsPipelineConfigId, numVerticesToDraw, vertexStride, numVertexElements, ptrVertexBuffer, ptrIndexBuffer);
 }
 
 /// @brief Add the window handle to the graphics API.

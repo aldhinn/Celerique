@@ -14,12 +14,13 @@ License: Mozilla Public License 2.0. (See ./LICENSE).
 #include <utility>
 
 namespace celerique {
+    /// @brief The application layer that facilitates drawing a triangle.
     class TriangleApp : public virtual IApplicationLayer {
     public:
         /// @brief Updates the state.
         /// @param ptrArg The shared pointer to the update data container.
         void onUpdate(::std::shared_ptr<IUpdateData> ptrUpdateData) override {
-            _ptrVulkanApi->draw(_triangleGraphicsPipelineId);
+            _ptrVulkanApi->draw(_triangleGraphicsPipelineId, 3);
         }
         /// @brief The event handler method.
         /// @param ptrEvent The shared pointer to the event being dispatched.

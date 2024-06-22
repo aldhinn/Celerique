@@ -119,17 +119,14 @@ if (NOT TARGET CeleriqueEngineVulkanPlugin)
         )
         gtest_discover_tests(CeleriqueEngineVulkanPluginUnitTestingCpp)
 
-        # Compile test triangle shaders.
-        exec_program(${GLSLC_EXE} ARGS
-            ${CMAKE_CURRENT_SOURCE_DIR}/tests/triangle.vert -o
-            ${CMAKE_CURRENT_SOURCE_DIR}/tests/triangle.vert.spv -O
-            --target-env=vulkan1.2
+        # Compile test shaders.
+        file(GLOB_RECURSE shaderSrcFiles
+            ${CMAKE_CURRENT_SOURCE_DIR}/tests/*.frag
+            ${CMAKE_CURRENT_SOURCE_DIR}/tests/*.vert
         )
-        exec_program(${GLSLC_EXE} ARGS
-            ${CMAKE_CURRENT_SOURCE_DIR}/tests/triangle.frag -o
-            ${CMAKE_CURRENT_SOURCE_DIR}/tests/triangle.frag.spv -O
-            --target-env=vulkan1.2
-        )
+        foreach(shaderSrc ${shaderSrcFiles})
+            exec_program(${GLSLC_EXE} ARGS ${shaderSrc} -o ${shaderSrc}.spv -O --target-env=vulkan1.2)
+        endforeach()
 
         # Drawing triangle testing.
         add_executable(
@@ -148,6 +145,27 @@ if (NOT TARGET CeleriqueEngineVulkanPlugin)
         else()
             target_link_libraries(
                 CeleriqueEngineVulkanPluginTriangleTesting PUBLIC
+                CeleriqueEngineX11Plugin
+            )
+        endif()
+
+        # Drawing cube testing.
+        add_executable(
+            CeleriqueEngineVulkanPluginCubeTesting
+            ${CMAKE_CURRENT_SOURCE_DIR}/tests/cube.cpp
+        )
+        target_link_libraries(
+            CeleriqueEngineVulkanPluginCubeTesting PUBLIC
+            CeleriqueEngineCore CeleriqueEngineVulkanPlugin
+        )
+        if (WIN32)
+            target_link_libraries(
+                CeleriqueEngineVulkanPluginCubeTesting PUBLIC
+                CeleriqueEngineWin32Plugin
+            )
+        else()
+            target_link_libraries(
+                CeleriqueEngineVulkanPluginCubeTesting PUBLIC
                 CeleriqueEngineX11Plugin
             )
         endif()
