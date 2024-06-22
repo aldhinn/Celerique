@@ -1905,12 +1905,12 @@ void celerique::vulkan::internal::Manager::drawOnWindow(
     /// @brief The collection of offset values for the mesh buffer.
     VkDeviceSize arrOffsets[] = {0};
     // Vertex buffer specified.
-    if (ptrVertexBuffer != nullptr) {
+    if (ptrVertexBuffer != nullptr && refMeshBuffer != nullptr) {
         vkCmdBindVertexBuffers(vecCommandBuffers[currentFrameIndex], 0, 1, &refMeshBuffer, arrOffsets);
     }
 
     // Index buffer specified.
-    if (ptrIndexBuffer != nullptr) {
+    if (ptrIndexBuffer != nullptr && refMeshBuffer != nullptr) {
         // Bind the indices.
         vkCmdBindIndexBuffer(
             vecCommandBuffers[currentFrameIndex], refMeshBuffer,
