@@ -51,7 +51,7 @@ namespace celerique {
     public:
         /// @brief Use a particular graphics API for rendering.
         /// @param ptrGraphicsApi 
-        void useGraphicsApi(::std::shared_ptr<IGraphicsAPI> ptrGraphicsApi);
+        virtual void useGraphicsApi(::std::shared_ptr<IGraphicsAPI> ptrGraphicsApi);
 
     // Protected member variables.
     protected:
@@ -101,6 +101,9 @@ namespace celerique {
         /// @brief Remove the window handle from the graphics API registry.
         /// @param windowHandle The handle to the window according to UI protocol.
         virtual void removeWindow(Pointer windowHandle) = 0;
+        /// @brief Re-create the swapchain of the specified window.
+        /// @param windowHandle The handle to the window of which swapchain to re-create.
+        virtual void recreateSwapChain(Pointer windowHandle) = 0;
 
     // Protected member variables.
     protected:

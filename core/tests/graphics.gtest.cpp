@@ -22,6 +22,7 @@ namespace celerique {
         MOCK_METHOD2(addWindow, void(UiProtocol, Pointer));
         MOCK_METHOD1(removeWindow, void(Pointer));
         MOCK_METHOD6(draw, void(PipelineConfigID, size_t, size_t, size_t, void*, uint32_t*));
+        MOCK_METHOD1(recreateSwapChain, void(Pointer));
     };
     /// @brief A mock implementation of an interface to a graphical user interface window.
     class MockWindow : public IWindow {
@@ -110,16 +111,5 @@ namespace celerique {
             }
             setIteratedOverIds.insert(configId);
         }
-    }
-
-    TEST_F(GraphicsUnitTestCpp, verifyShaderSrcExtensionParsing) {
-        GTEST_ASSERT_EQ(fileExtToShaderSrcLang("some/file"), CELERIQUE_SHADER_SRC_LANG_NULL);
-        GTEST_ASSERT_EQ(fileExtToShaderSrcLang("some/file.cpp.glsl"), CELERIQUE_SHADER_SRC_LANG_GLSL);
-        GTEST_ASSERT_EQ(fileExtToShaderSrcLang("some/file.glsl."), CELERIQUE_SHADER_SRC_LANG_NULL);
-        GTEST_ASSERT_EQ(fileExtToShaderSrcLang("glsl."), CELERIQUE_SHADER_SRC_LANG_NULL);
-        GTEST_ASSERT_EQ(fileExtToShaderSrcLang("hlsl."), CELERIQUE_SHADER_SRC_LANG_NULL);
-        GTEST_ASSERT_EQ(fileExtToShaderSrcLang("glsl.hlsl"), CELERIQUE_SHADER_SRC_LANG_HLSL);
-        GTEST_ASSERT_EQ(fileExtToShaderSrcLang("hlsl.glsl"), CELERIQUE_SHADER_SRC_LANG_GLSL);
-        GTEST_ASSERT_EQ(fileExtToShaderSrcLang("hlsl.hlsl.glsl"), CELERIQUE_SHADER_SRC_LANG_GLSL);
     }
 }

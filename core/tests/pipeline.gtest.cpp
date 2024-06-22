@@ -34,4 +34,15 @@ namespace celerique {
         // Check shader program pointer value.
         GTEST_ASSERT_EQ(ptrBuffer, reinterpret_cast<Pointer>(pipelineConfig.shaderProgram(CELERIQUE_SHADER_STAGE_UNSPECIFIED).ptrBuffer()));
     }
+
+    TEST_F(PipelineUnitTestCpp, verifyShaderSrcExtensionParsing) {
+        GTEST_ASSERT_EQ(fileExtToShaderSrcLang("some/file"), CELERIQUE_SHADER_SRC_LANG_NULL);
+        GTEST_ASSERT_EQ(fileExtToShaderSrcLang("some/file.cpp.glsl"), CELERIQUE_SHADER_SRC_LANG_GLSL);
+        GTEST_ASSERT_EQ(fileExtToShaderSrcLang("some/file.glsl."), CELERIQUE_SHADER_SRC_LANG_NULL);
+        GTEST_ASSERT_EQ(fileExtToShaderSrcLang("glsl."), CELERIQUE_SHADER_SRC_LANG_NULL);
+        GTEST_ASSERT_EQ(fileExtToShaderSrcLang("hlsl."), CELERIQUE_SHADER_SRC_LANG_NULL);
+        GTEST_ASSERT_EQ(fileExtToShaderSrcLang("glsl.hlsl"), CELERIQUE_SHADER_SRC_LANG_HLSL);
+        GTEST_ASSERT_EQ(fileExtToShaderSrcLang("hlsl.glsl"), CELERIQUE_SHADER_SRC_LANG_GLSL);
+        GTEST_ASSERT_EQ(fileExtToShaderSrcLang("hlsl.hlsl.glsl"), CELERIQUE_SHADER_SRC_LANG_GLSL);
+    }
 }

@@ -55,6 +55,9 @@ namespace celerique { namespace vulkan { namespace internal {
         /// @brief Remove the window handle from the graphics API registry.
         /// @param windowHandle The handle to the window according to UI protocol.
         void removeWindow(Pointer windowHandle) override;
+        /// @brief Re-create the swapchain of the specified window.
+        /// @param windowHandle The handle to the window of which swapchain to re-create.
+        void recreateSwapChain(Pointer windowHandle) override;
 
     private:
         /// @brief The shared pointer to the singleton instance.

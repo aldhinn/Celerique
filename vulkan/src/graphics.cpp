@@ -83,6 +83,12 @@ void ::celerique::vulkan::internal::GraphicsAPI::removeWindow(Pointer windowHand
     refManager.removeWindow(windowHandle);
 }
 
+/// @brief Re-create the swapchain of the specified window.
+/// @param windowHandle The handle to the window of which swapchain to re-create.
+void ::celerique::vulkan::internal::GraphicsAPI::recreateSwapChain(Pointer windowHandle) {
+    refManager.recreateSwapChain(windowHandle);
+}
+
 /// @brief The shared pointer to the singleton instance.
 ::std::shared_ptr<::celerique::vulkan::internal::GraphicsAPI> celerique::vulkan::internal::GraphicsAPI::_ptrInst = nullptr;
 

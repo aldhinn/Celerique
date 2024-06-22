@@ -67,6 +67,9 @@ namespace celerique { namespace vulkan { namespace internal {
         /// @brief Remove the window handle from the graphics API registry.
         /// @param windowHandle The handle to the window according to UI protocol.
         void removeWindow(Pointer windowHandle);
+        /// @brief Re-create the swapchain of the specified window.
+        /// @param windowHandle The handle to the window whose swapchain needs to be recreated.
+        void recreateSwapChain(Pointer windowHandle);
 
     private:
         /// @brief Default constructor. (Private to prevent instantiation).
@@ -374,6 +377,8 @@ namespace celerique { namespace vulkan { namespace internal {
     private:
         /// @brief The map of a window to a vulkan surface instance.
         ::std::unordered_map<Pointer, VkSurfaceKHR> _mapWindowToSurface;
+        /// @brief The map of a window to its UI protocol type.
+        ::std::unordered_map<Pointer, UiProtocol> _mapWindowToUiProtocol;
         /// @brief The map of a window to its associated graphics logical device.
         ::std::unordered_map<Pointer, VkDevice> _mapWindowToGraphicsLogicDev;
         /// @brief The map of a window to its swapchain image format.

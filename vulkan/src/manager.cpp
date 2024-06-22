@@ -125,42 +125,14 @@ void ::celerique::vulkan::internal::Manager::addGraphicsPipeline(
     pipelineDynamicStateInfo.dynamicStateCount = static_cast<uint32_t>(sizeof(arrDynamicState) / sizeof(VkDynamicState));
     pipelineDynamicStateInfo.pDynamicStates = arrDynamicState;
 
-    /// @brief A collection of vulkan viewport structures.
-    ::std::vector<VkViewport> vecViewports;
-    vecViewports.reserve(_mapWindowToSwapChainExtent.size());
-    /// @brief A collection of Scissor objects.
-    ::std::vector<VkRect2D> vecScissors;
-    vecScissors.reserve(vecViewports.size());
-    // Populate viewports and scissors.
-    for (const auto& pairWindowToSwapChainExtent : _mapWindowToSwapChainExtent) {
-        /// @brief Contains swapchain extent information.
-        const VkExtent2D& swapChainExtent = pairWindowToSwapChainExtent.second;
-
-        /// @brief Contains viewport information.
-        VkViewport viewport = {};
-        viewport.x = 0.0f;
-        viewport.y = 0.0f;
-        viewport.width = static_cast<float>(swapChainExtent.width);
-        viewport.height = static_cast<float>(swapChainExtent.height);
-        viewport.minDepth = 0.0f;
-        viewport.maxDepth = 1.0f;
-
-        /// @brief Contains scissor information.
-        VkRect2D scissor = {};
-        scissor.offset = {0, 0};
-        scissor.extent = swapChainExtent;
-
-        vecViewports.emplace_back(::std::move(viewport));
-        vecScissors.emplace_back(::std::move(scissor));
-    }
+    /// @brief The number of viewports to render to.
+    size_t numOfViewports = _mapWindowToSwapChainExtent.size();
 
     /// @brief The viewport state information.
     VkPipelineViewportStateCreateInfo viewportStateInfo = {};
     viewportStateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
-    viewportStateInfo.viewportCount = static_cast<uint32_t>(vecViewports.size());
-    viewportStateInfo.pViewports = vecViewports.data();
-    viewportStateInfo.scissorCount = static_cast<uint32_t>(vecScissors.size());
-    viewportStateInfo.pScissors = vecScissors.data();
+    viewportStateInfo.viewportCount = static_cast<uint32_t>(numOfViewports);
+    viewportStateInfo.scissorCount = static_cast<uint32_t>(numOfViewports);
 
     /// @brief Rasterization Information.
     VkPipelineRasterizationStateCreateInfo rasterizationInfo = {};
@@ -233,7 +205,7 @@ void ::celerique::vulkan::internal::Manager::addGraphicsPipeline(
     graphicsPipelineInfo.pColorBlendState = &colourBlendingInfo;
     graphicsPipelineInfo.pMultisampleState = &multiSamplingInfo;
     graphicsPipelineInfo.renderPass = _pairRenderPassToLogicDev.first;
-    // graphicsPipelineInfo.pDynamicState = &pipelineDynamicStateInfo; // TODO: Implement.
+    graphicsPipelineInfo.pDynamicState = &pipelineDynamicStateInfo;
 
     /// @brief The handle to the graphics pipeline.
     VkPipeline graphicsPipeline = nullptr;
@@ -523,9 +495,54 @@ void celerique::vulkan::internal::Manager::removeWindow(Pointer windowHandle) {
     VkSurfaceKHR surface = _mapWindowToSurface[windowHandle];
     vkDestroySurfaceKHR(_vulkanInstance, surface, nullptr);
     _mapWindowToSurface.erase(windowHandle);
+    _mapWindowToUiProtocol.erase(windowHandle);
     celeriqueLogTrace("Destroyed window surface.");
 
     celeriqueLogDebug("Removed window from registry.");
+}
+
+/// @brief Re-create the swapchain of the specified window.
+/// @param windowHandle The handle to the window whose swapchain needs to be recreated.
+void celerique::vulkan::internal::Manager::recreateSwapChain(Pointer windowHandle) {
+    ::std::unique_lock<::std::shared_mutex> writeLock(_sharedMutex);
+
+    /// @brief The graphics logical device assigned to the window.
+    VkDevice graphicsLogicalDevice = _mapWindowToGraphicsLogicDev[windowHandle];
+    // Wait for logical device resources to be free.
+    vkDeviceWaitIdle(graphicsLogicalDevice);
+
+    /// @brief The physical device that is being represented by the graphics logical device.
+    VkPhysicalDevice graphicsPhysicalDevice = _mapLogicDevToPhysDev[graphicsLogicalDevice];
+    /// @brief The UI protocol of the window.
+    UiProtocol uiProtocol = _mapWindowToUiProtocol[windowHandle];
+    /// @brief The assigned graphics command pool for the window.
+    VkCommandPool graphicsCommandPool = _mapWindowToGraphicsCommandPool[windowHandle];
+    /// @brief The reference to the window's collection of command buffers.
+    ::std::vector<VkCommandBuffer>& refVecCommandBuffers = _mapWindowToVecCommandBuffers[windowHandle];
+    /// @brief The reference to the window's collection of the swapchain frame buffers.
+    ::std::vector<VkFramebuffer>& refVecFrameBuffers = _mapWindowToVecSwapChainFrameBuffers[windowHandle];
+    /// @brief The reference to the collection of the window's collection of swapchain image views.
+    ::std::vector<VkImageView>& refVecSwapChainImageViews = _mapWindowToVecSwapChainImageViews[windowHandle];
+    /// @brief The window's swapchain handle.
+    VkSwapchainKHR swapChain = _mapWindowToSwapChain[windowHandle];
+
+    // Free existing command buffers.
+    vkFreeCommandBuffers(graphicsLogicalDevice, graphicsCommandPool, static_cast<uint32_t>(refVecCommandBuffers.size()), refVecCommandBuffers.data());
+    // Destroy current framebuffers.
+    for (VkFramebuffer frameBuffer : refVecFrameBuffers) {
+        vkDestroyFramebuffer(graphicsLogicalDevice, frameBuffer, nullptr);
+    }
+    // Destroy current swapchain image views.
+    for (VkImageView swapChainImageView : refVecSwapChainImageViews) {
+        vkDestroyImageView(graphicsLogicalDevice, swapChainImageView, nullptr);
+    }
+    // Destroy swapchain.
+    vkDestroySwapchainKHR(graphicsLogicalDevice, swapChain, nullptr);
+
+    createSwapChain(windowHandle, uiProtocol, graphicsPhysicalDevice);
+    createSwapChainImageViews(windowHandle);
+    createSwapChainFrameBuffers(windowHandle);
+    createCommandBuffers(windowHandle);
 }
 
 /// @brief Default constructor. (Private to prevent instantiation).
@@ -943,6 +960,8 @@ void celerique::vulkan::internal::Manager::destroyRegisteredSurfaces() {
         VkSurfaceKHR surface = pairWindowToSurface.second;
         vkDestroySurfaceKHR(_vulkanInstance, surface, nullptr);
     }
+    _mapWindowToSurface.clear();
+    _mapWindowToUiProtocol.clear();
     celeriqueLogTrace("Destroyed surfaces.");
 }
 
@@ -1027,6 +1046,7 @@ VkSurfaceKHR celerique::vulkan::internal::Manager::createVulkanSurface(Pointer w
     }
 
     _mapWindowToSurface[windowHandle] = surface;
+    _mapWindowToUiProtocol[windowHandle] = uiProtocol;
     return surface;
 }
 
@@ -1790,7 +1810,7 @@ void celerique::vulkan::internal::Manager::drawOnWindow(
         vecImageAvailableSemaphores[currentFrameIndex], VK_NULL_HANDLE, &imageIndex
     );
     if (result == VK_ERROR_OUT_OF_DATE_KHR) {
-        // TODO: Implement update or re-create swapchain.
+        // Simply return. The engine will eventually re-create the swapchain triggered by certain events.
         return;
     }
     else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
@@ -1836,6 +1856,28 @@ void celerique::vulkan::internal::Manager::drawOnWindow(
         celeriqueLogError(errorMessage);
         throw ::std::runtime_error(errorMessage);
     }
+
+    /// @brief The window's swapchain extent.
+    const VkExtent2D& swapChainExtent = _mapWindowToSwapChainExtent[windowHandle];
+
+    /// @brief The viewport description.
+    VkViewport viewport = {};
+    viewport.x = 0.0f;
+    viewport.y = 0.0f;
+    viewport.width = static_cast<float>(swapChainExtent.width);
+    viewport.height = static_cast<float>(swapChainExtent.height);
+    viewport.minDepth = 0.0f;
+    viewport.maxDepth = 1.0f;
+    // Set the viewport
+    vkCmdSetViewport(vecCommandBuffers[currentFrameIndex], 0, 1, &viewport);
+
+    /// @brief The scissor rectangle description.
+    VkRect2D scissor = {};
+    scissor.offset = {0, 0};
+    scissor.extent = swapChainExtent;
+
+    // Set the scissor
+    vkCmdSetScissor(vecCommandBuffers[currentFrameIndex], 0, 1, &scissor);
 
     /// @brief The clear value.
     VkClearValue clearValue;
@@ -1928,7 +1970,7 @@ void celerique::vulkan::internal::Manager::drawOnWindow(
     // presenting the image back to the swapchain.
     result = vkQueuePresentKHR(selectPresentQueue(graphicsLogicalDevice), &presentInfo);
     if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) {
-        // TODO: Implement update or re-create swapchain.
+        // Simply return. The engine will eventually re-create the swapchain triggered by certain events.
         return;
     } else if (result != VK_SUCCESS) {
         ::std::string errorMessage = "Failed to submit to present with result " + ::std::to_string(result);

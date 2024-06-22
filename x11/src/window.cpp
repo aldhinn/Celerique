@@ -140,6 +140,13 @@ void ::celerique::x11::internal::Window::onUpdate(::std::shared_ptr<IUpdateData>
             // Update window sizes.
             _atomicRecentWindowWidth.store(width);
             _atomicRecentWindowHeight.store(height);
+
+            /// @brief The retrieved shared pointer of this window's graphics API interface.
+            ::std::shared_ptr<IGraphicsAPI> ptrGraphicsApi = _weakPtrGraphicsApi.lock();
+            // Check if not null before re-creating swapchain.
+            if (ptrGraphicsApi != nullptr) {
+                ptrGraphicsApi->recreateSwapChain(_windowHandle);
+            }
         }
     } return;
 
