@@ -19,14 +19,14 @@ void ::celerique::internal::Engine::onUpdate(::std::shared_ptr<IUpdateData> ptrU
     {
         ::std::shared_lock<::std::shared_mutex> readLock(_layerMutex);
         // Update layers.
-        for (::std::unique_ptr<IApplicationLayer>& ptrAppLayer :_vecPtrAppLayers) {
+        for (::std::unique_ptr<IApplicationLayer>& ptrAppLayer :_listPtrAppLayers) {
             ptrAppLayer->onUpdate(ptrUpdateData);
         }
     }
     {
         ::std::shared_lock<::std::shared_mutex> readLock(_windowsMutex);
         // Update graphical user interface windows.
-        for (::std::unique_ptr<IWindow>& ptrWindow : _vecPtrWindows) {
+        for (::std::unique_ptr<IWindow>& ptrWindow : _listPtrWindows) {
             ptrWindow->onUpdate();
         }
     }
@@ -43,7 +43,7 @@ void ::celerique::internal::Engine::onEvent(::std::shared_ptr<Event> ptrEvent) {
         ::std::shared_lock<::std::shared_mutex> readLock(_layerMutex);
 
         // Dispatch input and window events to layers (from last to first).
-        for (auto layerRIterator = _vecPtrAppLayers.rbegin(); layerRIterator != _vecPtrAppLayers.rend() &&
+        for (auto layerRIterator = _listPtrAppLayers.rbegin(); layerRIterator != _listPtrAppLayers.rend() &&
         (ptrEvent->category() & (CELERIQUE_EVENT_CATEGORY_WINDOW | CELERIQUE_EVENT_CATEGORY_INPUT)) != 0 &&
         ptrEvent->shouldPropagate(); layerRIterator++) {
             dispatcher.dispatch<::celerique::Event>(
@@ -59,7 +59,7 @@ void ::celerique::internal::Engine::addAppLayer(::std::unique_ptr<IApplicationLa
     ::std::unique_lock<::std::shared_mutex> writeLock(_layerMutex);
 
     ptrAppLayer->addEventListener(this);
-    _vecPtrAppLayers.emplace_back(::std::move(ptrAppLayer));
+    _listPtrAppLayers.emplace_back(::std::move(ptrAppLayer));
     celeriqueLogTrace("Added a layer.");
 }
 
@@ -69,7 +69,7 @@ void ::celerique::internal::Engine::addWindow(::std::unique_ptr<IWindow>&& ptrWi
     ::std::unique_lock<::std::shared_mutex> writeLock(_windowsMutex);
 
     ptrWindow->addEventListener(this);
-    _vecPtrWindows.emplace_back(::std::move(ptrWindow));
+    _listPtrWindows.emplace_back(::std::move(ptrWindow));
     celeriqueLogTrace("Added a graphical user interface window.");
 }
 

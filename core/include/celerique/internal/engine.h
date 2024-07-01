@@ -15,7 +15,7 @@ License: Mozilla Public License 2.0. (See ./LICENSE).
 
 // Begin C++ Only Region.
 #if defined(__cplusplus)
-#include <vector>
+#include <list>
 #include <memory>
 #include <atomic>
 #include <shared_mutex>
@@ -51,12 +51,12 @@ namespace celerique { namespace internal {
     // Private member variables.
     private:
         /// @brief The collection of application layer instances.
-        ::std::vector<::std::unique_ptr<IApplicationLayer>> _vecPtrAppLayers;
-        /// @brief The mutex for `_vecPtrAppLayers`.
+        ::std::list<::std::unique_ptr<IApplicationLayer>> _listPtrAppLayers;
+        /// @brief The mutex for `_listPtrAppLayers`.
         ::std::shared_mutex _layerMutex;
         /// @brief The graphical user interface windows managed by the engine.
-        ::std::vector<::std::unique_ptr<IWindow>> _vecPtrWindows;
-        /// @brief The mutex for `_vecPtrWindows`.
+        ::std::list<::std::unique_ptr<IWindow>> _listPtrWindows;
+        /// @brief The mutex for `_listPtrWindows`.
         ::std::shared_mutex _windowsMutex;
         /// @brief The state that indicate if the application loop should keep running.
         ::std::atomic<bool> _atomicShouldAppLoopRunning = true;
