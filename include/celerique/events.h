@@ -50,7 +50,7 @@ typedef uint8_t CeleriqueEventHandlingStrategy;
 #include <thread>
 #include <typeindex>
 #include <memory>
-#include <vector>
+#include <list>
 #include <atomic>
 
 namespace celerique {
@@ -183,7 +183,7 @@ namespace celerique {
 
     protected:
         /// @brief The list of event handlers that will receive event dispatch calls.
-        ::std::vector<EventHandler> _vecListeners;
+        ::std::list<EventHandler> _listListeners;
 
     public:
         /// @brief Pure virtual destructor.

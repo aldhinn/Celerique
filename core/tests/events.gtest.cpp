@@ -48,7 +48,7 @@ namespace celerique {
             _didDispatchMockEvent1 = false;
             _didDispatchMockEvent2 = false;
             _didDispatchGenericEvent = false;
-            _vecListeners.clear();
+            _listListeners.clear();
         }
 
         /// @brief State variable indicating if an event handler for

@@ -21,16 +21,16 @@ License: Mozilla Public License 2.0. (See ./LICENSE).
 /// @brief Pure virtual destructor.
 ::celerique::EventBroadcaster::~EventBroadcaster() {}
 
-/// @brief Add an event listener callback to `_vecListeners`.
+/// @brief Add an event listener callback to `_listListeners`.
 /// @param listener The function pointer to the event listener.
 void ::celerique::EventBroadcaster::addEventListener(EventHandler&& listener) {
-    _vecListeners.emplace_back(::std::move(listener));
+    _listListeners.emplace_back(::std::move(listener));
 }
 
 /// @brief Add the `onEvent` method of an `IEventListener` instance.
 /// @param ptrListener The pointer to the `IEventListener` instance.
 void ::celerique::EventBroadcaster::addEventListener(IEventListener* ptrListener) {
-    _vecListeners.emplace_back(::std::bind(
+    _listListeners.emplace_back(::std::bind(
         &IEventListener::onEvent, ptrListener, ::std::placeholders::_1
     ));
 }
@@ -43,7 +43,7 @@ void ::celerique::EventBroadcaster::broadcast(
 ) {
     EventDispatcher dispatcher(ptrEvent);
     // Dispatch to all listeners.
-    for (const EventHandler& listener : _vecListeners) {
+    for (const EventHandler& listener : _listListeners) {
         dispatcher.dispatch<Event>(listener, strategy);
     }
 }
