@@ -90,7 +90,7 @@ void ::celerique::vulkan::internal::Manager::addGraphicsPipeline(
     VkPipelineVertexInputStateCreateInfo vertexInputStateInfo = {};
     vertexInputStateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
     // Assign only if there are vertex input layout specified in the pipeline configuration.
-    if (!ptrGraphicsPipelineConfig->vecVertexInputLayouts().empty()) {
+    if (!ptrGraphicsPipelineConfig->listVertexInputLayouts().empty()) {
         vertexInputStateInfo.vertexBindingDescriptionCount = 1;
         vertexInputStateInfo.pVertexBindingDescriptions = &vertexBindingDescription;
         vertexInputStateInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(vecVertexAttributeDescriptions.size());
@@ -2097,13 +2097,13 @@ void celerique::vulkan::internal::Manager::fillMeshBuffer(
     VkResult result;
 
     /// @brief The collection of shader stages.
-    ::std::vector<ShaderStage> vecShaderStages = ptrPipelineConfig->vecStages();
+    ::std::list<ShaderStage> listShaderStages = ptrPipelineConfig->listStages();
     /// @brief The collection of vulkan pipeline shader stages.
     ::std::vector<VkPipelineShaderStageCreateInfo> vecShaderStageCreateInfos;
-    vecShaderStageCreateInfos.reserve(vecShaderStages.size());
+    vecShaderStageCreateInfos.reserve(listShaderStages.size());
 
     // Iterating over shader stages.
-    for (ShaderStage shaderStage : vecShaderStages) {
+    for (ShaderStage shaderStage : listShaderStages) {
         /// @brief The const reference to the shader program of the specified shader stage.
         const ShaderProgram& refShaderProgram = ptrPipelineConfig->shaderProgram(shaderStage);
         /// @brief The information about the shader module.
@@ -2166,13 +2166,13 @@ void celerique::vulkan::internal::Manager::fillMeshBuffer(
     PipelineConfig* ptrPipelineConfig
 ) {
     /// @brief The collection of input layouts.
-    const ::std::vector<InputLayout>& vecInputLayouts = ptrPipelineConfig->vecVertexInputLayouts();
+    const ::std::list<InputLayout>& listInputLayouts = ptrPipelineConfig->listVertexInputLayouts();
     /// @brief The collection of vertex attribute descriptions.
     ::std::vector<VkVertexInputAttributeDescription> vecVertexAttributeDescriptions;
-    vecVertexAttributeDescriptions.reserve(vecInputLayouts.size());
+    vecVertexAttributeDescriptions.reserve(listInputLayouts.size());
 
     // Populate vertex attributes.
-    for (const InputLayout& inputLayout : vecInputLayouts) {
+    for (const InputLayout& inputLayout : listInputLayouts) {
         VkVertexInputAttributeDescription vertexAttributeDescription = {};
         vertexAttributeDescription.binding = 0;
         vertexAttributeDescription.location = inputLayout.location;

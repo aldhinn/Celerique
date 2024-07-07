@@ -71,7 +71,7 @@ typedef uint8_t CeleriquePipelineInputType;
 #if defined(__cplusplus)
 #include <unordered_map>
 #include <string>
-#include <vector>
+#include <list>
 
 namespace celerique {
     /// @brief The type of the pipeline configuration unique identifier.
@@ -150,10 +150,10 @@ namespace celerique {
     public:
         /// @brief Member init constructor.
         /// @param mapStageTypeToShaderProgram The map of shader stages to their corresponding shader programs.
-        /// @param vecVertexInputLayouts The collection of layouts of vertex inputs.
+        /// @param listVertexInputLayouts The collection of layouts of vertex inputs.
         PipelineConfig(
             ::std::unordered_map<ShaderStage, ShaderProgram>&& mapShaderStageToShaderProgram = {},
-            ::std::vector<InputLayout>&& vecVertexInputLayouts = {}
+            ::std::list<InputLayout>&& listVertexInputLayouts = {}
         );
 
         /// @brief Access the shader program of a particular shader stage.
@@ -165,14 +165,14 @@ namespace celerique {
         /// @return The reference to the shader program container.
         ShaderProgram& shaderProgram(ShaderStage stage);
         /// @return The shader stages defined in this pipeline configuration.
-        ::std::vector<ShaderStage> vecStages() const;
+        ::std::list<ShaderStage> listStages() const;
 
         /// @brief The collection of layouts of vertex inputs.
-        /// @return The const reference to `_vecVertexInputLayouts`.
-        const ::std::vector<InputLayout>& vecVertexInputLayouts() const;
+        /// @return The const reference to `_listVertexInputLayouts`.
+        const ::std::list<InputLayout>& listVertexInputLayouts() const;
         /// @brief The collection of layouts of vertex inputs.
-        /// @return The reference to `_vecVertexInputLayouts`.
-        ::std::vector<InputLayout>& vecVertexInputLayouts();
+        /// @return The reference to `_listVertexInputLayouts`.
+        ::std::list<InputLayout>& listVertexInputLayouts();
 
         /// @brief Calculate and return the stride.
         /// @return The stride value.
@@ -182,7 +182,7 @@ namespace celerique {
         /// @brief The map of shader stages to their corresponding shader programs.
         ::std::unordered_map<ShaderStage, ShaderProgram> _mapShaderStageToShaderProgram;
         /// @brief The collection of layouts of vertex inputs.
-        ::std::vector<InputLayout> _vecVertexInputLayouts;
+        ::std::list<InputLayout> _listVertexInputLayouts;
     };
 
     /// @brief A layout of a particular shader input variable.

@@ -106,12 +106,12 @@ _ptrBuffer(other._ptrBuffer) {
 
 /// @brief Member init constructor.
 /// @param mapStageTypeToShaderProgram The map of shader stages to their corresponding shader programs.
-/// @param vecVertexInputLayouts The collection of layouts of vertex inputs.
+/// @param listVertexInputLayouts The collection of layouts of vertex inputs.
 ::celerique::PipelineConfig::PipelineConfig(
     ::std::unordered_map<ShaderStage, ShaderProgram>&& mapShaderStageToShaderProgram,
-    ::std::vector<InputLayout>&& vecVertexInputLayouts
+    ::std::list<InputLayout>&& listVertexInputLayouts
 ) : _mapShaderStageToShaderProgram(::std::move(mapShaderStageToShaderProgram)),
-_vecVertexInputLayouts(::std::move(vecVertexInputLayouts)) {}
+_listVertexInputLayouts(::std::move(listVertexInputLayouts)) {}
 
 /// @brief A shader program container that contains no shader.
 static ::celerique::ShaderProgram emptyShaderProgram(0, nullptr);
@@ -136,28 +136,28 @@ const ::celerique::ShaderProgram& celerique::PipelineConfig::shaderProgram(Shade
 }
 
 /// @return The shader stages defined in this pipeline configuration.
-::std::vector<::celerique::ShaderStage> celerique::PipelineConfig::vecStages() const {
+::std::list<::celerique::ShaderStage> celerique::PipelineConfig::listStages() const {
     /// @brief The container for the collection of shader stages.
-    ::std::vector<ShaderStage> vecStages;
+    ::std::list<ShaderStage> listStages;
     for (const auto& pairShaderStageToShaderProgram : _mapShaderStageToShaderProgram) {
         /// @brief The shader stage value.
         ShaderStage shaderStage = pairShaderStageToShaderProgram.first;
         // Collect the shader stage.
-        vecStages.push_back(shaderStage);
+        listStages.push_back(shaderStage);
     }
-    return vecStages;
+    return listStages;
 }
 
 /// @brief The collection of layouts of vertex inputs.
-/// @return The const reference to `_vecVertexInputLayouts`.
-const ::std::vector<::celerique::InputLayout>& celerique::PipelineConfig::vecVertexInputLayouts() const {
-    return _vecVertexInputLayouts;
+/// @return The const reference to `_listVertexInputLayouts`.
+const ::std::list<::celerique::InputLayout>& celerique::PipelineConfig::listVertexInputLayouts() const {
+    return _listVertexInputLayouts;
 }
 
 /// @brief The collection of layouts of vertex inputs.
-/// @return The reference to `_vecVertexInputLayouts`.
-::std::vector<::celerique::InputLayout>& celerique::PipelineConfig::vecVertexInputLayouts() {
-    return _vecVertexInputLayouts;
+/// @return The reference to `_listVertexInputLayouts`.
+::std::list<::celerique::InputLayout>& celerique::PipelineConfig::listVertexInputLayouts() {
+    return _listVertexInputLayouts;
 }
 
 /// @brief Calculate and return the stride value.
@@ -167,7 +167,7 @@ size_t celerique::PipelineConfig::stride() const {
     size_t stride = 0;
 
     // Iterate over input layouts.
-    for (const InputLayout& inputLayout : _vecVertexInputLayouts) {
+    for (const InputLayout& inputLayout : _listVertexInputLayouts) {
         /// @brief The size of each data type.
         size_t dataTypeSize = 0;
         // Determine the size of the type.

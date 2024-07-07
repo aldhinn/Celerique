@@ -26,27 +26,33 @@ namespace celerique {
         _position(position), _colour(colour) {}
 
         /// @return The pipeline input layout for a `CubeVertex`.
-        static ::std::vector<InputLayout> vecInputLayouts() {
+        static ::std::list<InputLayout> listInputLayouts() {
             /// @brief The collection of layouts of vertex inputs.
-            ::std::vector<InputLayout> vecVertexInputLayouts(2);
+            ::std::list<InputLayout> listVertexInputLayouts;
 
-            // Layout for position.
-            vecVertexInputLayouts[0].name = "inPosition";
-            vecVertexInputLayouts[0].location = 0;
-            vecVertexInputLayouts[0].inputType = CELERIQUE_PIPELINE_INPUT_TYPE_FLOAT;
-            vecVertexInputLayouts[0].numElements = 4;
-            vecVertexInputLayouts[0].offset = offsetof(CubeVertex, _position);
+            /// @brief Layout for position.
+            InputLayout positionLayout = {};
+            positionLayout.name = "inPosition";
+            positionLayout.location = 0;
+            positionLayout.inputType = CELERIQUE_PIPELINE_INPUT_TYPE_FLOAT;
+            positionLayout.numElements = 4;
+            positionLayout.offset = offsetof(CubeVertex, _position);
+
+            listVertexInputLayouts.emplace_back(positionLayout);
             celeriqueLogDebug("offsetof(CubeVertex, _position) = " + ::std::to_string(offsetof(CubeVertex, _position)));
 
             // Layout for colour.
-            vecVertexInputLayouts[1].name = "inColour";
-            vecVertexInputLayouts[1].location = 1;
-            vecVertexInputLayouts[1].inputType = CELERIQUE_PIPELINE_INPUT_TYPE_FLOAT;
-            vecVertexInputLayouts[1].numElements = 4;
-            vecVertexInputLayouts[1].offset = offsetof(CubeVertex, _colour);
+            InputLayout colourLayout = {};
+            colourLayout.name = "inColour";
+            colourLayout.location = 1;
+            colourLayout.inputType = CELERIQUE_PIPELINE_INPUT_TYPE_FLOAT;
+            colourLayout.numElements = 4;
+            colourLayout.offset = offsetof(CubeVertex, _colour);
+
+            listVertexInputLayouts.emplace_back(colourLayout);
             celeriqueLogDebug("offsetof(CubeVertex, _colour) = " + ::std::to_string(offsetof(CubeVertex, _colour)));
 
-            return vecVertexInputLayouts;
+            return listVertexInputLayouts;
         }
 
     // Getters.
@@ -117,10 +123,10 @@ namespace celerique {
             );
 
             /// @brief The collection of layouts of vertex inputs.
-            ::std::vector<InputLayout> vecVertexInputLayouts = CubeVertex::vecInputLayouts();
+            ::std::list<InputLayout> listVertexInputLayouts = CubeVertex::listInputLayouts();
 
             _cubeGraphicsPipelineId = _ptrVulkanApi->addGraphicsPipelineConfig(
-                PipelineConfig(::std::move(mapShaderStageToShaderProgram), ::std::move(vecVertexInputLayouts))
+                PipelineConfig(::std::move(mapShaderStageToShaderProgram), ::std::move(listVertexInputLayouts))
             );
         }
         /// @brief Hard code the vertices of the mesh.
