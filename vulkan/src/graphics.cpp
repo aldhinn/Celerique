@@ -56,6 +56,34 @@ void ::celerique::vulkan::internal::GraphicsAPI::clearGraphicsPipelineConfigs() 
     IGraphicsAPI::clearGraphicsPipelineConfigs();
 }
 
+/// @brief Create and allocate a buffer in the GPU. No need to de-allocate the buffer created from this function as the engine shall manage it's lifecycle.
+/// @param bufferSize The size of the buffer in bytes.
+/// @return The unique identifier for the GPU buffer.
+celerique::GpuBufferID celerique::vulkan::internal::GraphicsAPI::createBuffer(size_t bufferSize) {
+    // TODO: Implement.
+
+    return IGraphicsAPI::createBuffer(bufferSize);
+}
+
+/// @brief Copy the data from the CPU to the GPU.
+/// @param ptrBufferSrc The pointer to the data source buffer.
+/// @param dataSrcSize The size of the data to be copied.
+/// @param bufferId The Id of the GPU buffer.
+void celerique::vulkan::internal::GraphicsAPI::copyToGpuBuffer(
+    void* ptrBufferSrc, size_t dataSrcSize, GpuBufferID bufferId
+) {
+    // TODO: Implement.
+}
+
+/// @brief Bind the uniform buffer to a graphics pipeline.
+/// @param graphicsPipelineConfigId The identifier of the graphics pipeline configuration.
+/// @param uniformBufferId The identifier of the GPU buffer.
+void celerique::vulkan::internal::GraphicsAPI::bindUniformToPipeline(
+    PipelineConfigID graphicsPipelineConfigId, GpuBufferID uniformBufferId
+) {
+    // TODO: Implement.
+}
+
 /// @brief Graphics draw call.
 /// @param graphicsPipelineConfigId The identifier for the graphics pipeline configuration to be used for drawing.
 /// @param numVerticesToDraw The number of vertices to be drawn.

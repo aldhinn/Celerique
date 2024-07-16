@@ -63,5 +63,12 @@ void ::celerique::IGraphicsAPI::clearGraphicsPipelineConfigs() {
     _nextGraphicsPipelineConfigId = 0;
 }
 
+/// @brief Create and allocate a buffer in the GPU. No need to de-allocate the buffer created from this function as the engine shall manage it's lifecycle.
+/// @param bufferSize The size of the buffer in bytes.
+/// @return The unique identifier for the GPU buffer.
+::celerique::GpuBufferID celerique::IGraphicsAPI::createBuffer(size_t bufferSize) {
+    return _nextBufferId++;
+}
+
 /// @brief Pure virtual destructor.
 ::celerique::IGraphicsAPI::~IGraphicsAPI() {}

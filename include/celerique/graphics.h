@@ -32,7 +32,6 @@ typedef uint8_t CeleriqueUiProtocol;
 // Begin C++ Only Region.
 #if defined(__cplusplus)
 #include <unordered_map>
-#include <vector>
 #include <memory>
 #include <string>
 
@@ -82,6 +81,21 @@ namespace celerique {
         /// @brief Clear the collection of graphics pipeline configurations.
         virtual void clearGraphicsPipelineConfigs();
 
+        /// @brief Create and allocate a buffer in the GPU. No need to de-allocate the buffer created from this function as the engine shall manage it's lifecycle.
+        /// @param bufferSize The size of the buffer in bytes.
+        /// @return The unique identifier for the GPU buffer.
+        virtual GpuBufferID createBuffer(size_t bufferSize);
+        /// @brief Copy the data from the CPU to the GPU.
+        /// @param ptrBufferSrc The pointer to the data source buffer.
+        /// @param dataSrcSize The size of the data to be copied.
+        /// @param bufferId The identifier of the GPU buffer.
+        virtual void copyToGpuBuffer(void* ptrBufferSrc, size_t dataSrcSize, GpuBufferID bufferId) = 0;
+
+        /// @brief Bind the uniform buffer to a graphics pipeline.
+        /// @param graphicsPipelineConfigId The identifier of the graphics pipeline configuration.
+        /// @param uniformBufferId The identifier of the GPU buffer.
+        virtual void bindUniformToPipeline(PipelineConfigID graphicsPipelineConfigId, GpuBufferID uniformBufferId) = 0;
+
         /// @brief Graphics draw call.
         /// @param graphicsPipelineConfigId The identifier for the graphics pipeline configuration to be used for drawing.
         /// @param numVerticesToDraw The number of vertices to be drawn.
@@ -111,6 +125,8 @@ namespace celerique {
         ::std::unordered_map<PipelineConfigID, PipelineConfig> _mapIdToGraphicsPipelineConfig;
         /// @brief The value of the next graphics pipeline config identifier value.
         PipelineConfigID _nextGraphicsPipelineConfigId = 0;
+        /// @brief The value of the next buffer identifier value.
+        GpuBufferID _nextBufferId = 0;
 
     public:
         /// @brief Pure virtual destructor.

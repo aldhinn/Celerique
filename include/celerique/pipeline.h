@@ -52,6 +52,8 @@ typedef uint8_t CeleriqueShaderStage;
 
 /// @brief The type of the pipeline configuration unique identifier.
 typedef uintptr_t CeleriquePipelineConfigID;
+/// @brief The type of a GPU buffer unique identifier.
+typedef uintptr_t CeleriqueGpuBufferID;
 
 /// @brief The type of a particular pipeline input variable.
 typedef uint8_t CeleriquePipelineInputType;
@@ -76,6 +78,8 @@ typedef uint8_t CeleriquePipelineInputType;
 namespace celerique {
     /// @brief The type of the pipeline configuration unique identifier.
     typedef CeleriquePipelineConfigID PipelineConfigID;
+    /// @brief The type of a GPU buffer unique identifier.
+    typedef CeleriqueGpuBufferID GpuBufferID;
     /// @brief The type of a pipeline shader stage.
     typedef CeleriqueShaderStage ShaderStage;
     /// @brief The type of programming language the shader was written on.
