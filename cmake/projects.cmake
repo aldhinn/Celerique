@@ -49,4 +49,8 @@ if (NOT DEFINED CELERIQUE_PROJECT_VERSION)
     if (APPLE AND IOS)
         add_compile_definitions(CELERIQUE_FOR_IOS)
     endif()
+    # If targeting web assembly.
+    if (CMAKE_CXX_COMPILER_ID STREQUAL "Emscripten")
+        add_compile_definitions(CELERIQUE_FOR_WEB_ASSEMBLY)
+    endif()
 endif()

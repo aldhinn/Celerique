@@ -33,6 +33,10 @@ License: Mozilla Public License 2.0. (See ./LICENSE).
 #error No graphical user interface window wrapper for target system yet.
 #endif
 
+#if !defined(CELERIQUE_FOR_WEB_ASSEMBLY)
+#include <celerique/vulkan/graphics.h>
+#endif
+
 // Begin C++ Only Region.
 #if defined(__cplusplus)
 #include <chrono>
