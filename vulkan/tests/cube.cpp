@@ -21,9 +21,9 @@ namespace celerique {
     public:
         /// @brief Member init constructor.
         /// @param position The position of a point of a triangle in the world.
-        /// @param colour The colour of a point of a triangle.
-        CubeVertex(const Vec4& position, const Vec4& colour) :
-        _position(position), _colour(colour) {}
+        /// @param normal The normal vector of the surface.
+        CubeVertex(const Vec3& position, const Vec3& normal) :
+        _position(position), _normal(normal) {}
 
         /// @return The pipeline input layout for a `CubeVertex`.
         static ::std::list<InputLayout> listInputLayouts() {
@@ -35,22 +35,22 @@ namespace celerique {
             positionLayout.name = "inPosition";
             positionLayout.location = 0;
             positionLayout.inputType = CELERIQUE_PIPELINE_INPUT_TYPE_FLOAT;
-            positionLayout.numElements = 4;
+            positionLayout.numElements = 3;
             positionLayout.offset = offsetof(CubeVertex, _position);
 
             listVertexInputLayouts.emplace_back(positionLayout);
             celeriqueLogDebug("offsetof(CubeVertex, _position) = " + ::std::to_string(offsetof(CubeVertex, _position)));
 
-            // Layout for colour.
-            InputLayout colourLayout = {};
-            colourLayout.name = "inColour";
-            colourLayout.location = 1;
-            colourLayout.inputType = CELERIQUE_PIPELINE_INPUT_TYPE_FLOAT;
-            colourLayout.numElements = 4;
-            colourLayout.offset = offsetof(CubeVertex, _colour);
+            /// @brief Layout for normal.
+            InputLayout normalLayout = {};
+            normalLayout.name = "inNormal";
+            normalLayout.location = 1;
+            normalLayout.inputType = CELERIQUE_PIPELINE_INPUT_TYPE_FLOAT;
+            normalLayout.numElements = 3;
+            normalLayout.offset = offsetof(CubeVertex, _normal);
 
-            listVertexInputLayouts.emplace_back(colourLayout);
-            celeriqueLogDebug("offsetof(CubeVertex, _colour) = " + ::std::to_string(offsetof(CubeVertex, _colour)));
+            listVertexInputLayouts.emplace_back(normalLayout);
+            celeriqueLogDebug("offsetof(CubeVertex, _position) = " + ::std::to_string(offsetof(CubeVertex, _normal)));
 
             return listVertexInputLayouts;
         }
@@ -59,24 +59,24 @@ namespace celerique {
     public:
         /// @brief The position of a point of a triangle in the world.
         /// @return The const reference to the `_position`.
-        const Vec4& position() const { return _position; }
+        const Vec3& position() const { return _position; }
         /// @brief The position of a point of a triangle in the world.
         /// @return The reference to the `_position`.
-        Vec4& position() { return _position; }
+        Vec3& position() { return _position; }
 
-        /// @brief The colour of a point of a triangle.
-        /// @return The const reference to the `_colour`.
-        const Vec4& colour() const { return _colour; }
-        /// @brief The colour of a point of a triangle.
-        /// @return The reference to the `_colour`.
-        Vec4& colour() { return _colour; }
+        /// @brief The normal vector of the surface.
+        /// @return The const reference to the `_normal`.
+        const Vec3& normal() const { return _normal; }
+        /// @brief The normal vector of the surface.
+        /// @return The reference to the `_normal`.
+        Vec3& normal() { return _normal; }
 
     // Vertex attributes.
     private:
         /// @brief The position of a point of a triangle in the world.
-        Vec4 _position;
-        /// @brief The colour of a point of a triangle.
-        Vec4 _colour;
+        Vec3 _position;
+        /// @brief The normal vector of the surface.
+        Vec3 _normal;
     };
 
     /// @brief The application layer that facilitates drawing a cube.
@@ -132,26 +132,40 @@ namespace celerique {
         /// @brief Hard code the vertices of the mesh.
         void loadMesh() {
             // Load vertices.
-            _vecVertices.reserve(7);
+            _vecVertices.reserve(36);
             _vecVertices.insert(_vecVertices.end(), {
-                CubeVertex({0.0f, -0.4f, 0.0f, 1.0f}, {0.0f, 0.3f, 0.6f, 1.0f}),
-                CubeVertex({0.0f, 0.1f, 0.0f, 1.0f}, {0.1f, 0.6f, 0.9f, 1.0f}),
-                CubeVertex({-0.4f, -0.2f, 0.0f, 1.0f}, {0.0f, 0.4f, 0.7f, 1.0f}),
-                CubeVertex({0.4f, -0.2f, 0.0f, 1.0f}, {0.0f, 0.4f, 0.7f, 1.0f}),
-                CubeVertex({0.4f, 0.3f, 0.0f, 1.0f}, {0.0f, 0.25f, 0.55f, 1.0f}),
-                CubeVertex({0.0f, 0.6f, 0.0f, 1.0f}, {0.0f, 0.3f, 0.6f, 1.0f}),
-                CubeVertex({-0.4f, 0.3f, 0.0f, 1.0f}, {0.0f, 0.25f, 0.55f, 1.0f})
+                // Top face
+                CubeVertex({-0.5f, -0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}),
+                CubeVertex({0.5f, -0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}),
+                CubeVertex({0.5f, 0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}),
+                CubeVertex({0.5f, 0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}),
+                CubeVertex({-0.5f, 0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}),
+                CubeVertex({-0.5f, -0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}),
+                // Front face
+                CubeVertex({-0.5f, 0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}),
+                CubeVertex({0.5f, 0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}),
+                CubeVertex({0.5f, 0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}),
+                CubeVertex({0.5f, 0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}),
+                CubeVertex({-0.5f, 0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}),
+                CubeVertex({-0.5f, 0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}),
+                // Right face
+                CubeVertex({0.5f, -0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}),
+                CubeVertex({0.5f,  0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}),
+                CubeVertex({0.5f,  0.5f,  0.5f}, {1.0f, 0.0f, 0.0f}),
+                CubeVertex({0.5f,  0.5f,  0.5f}, {1.0f, 0.0f, 0.0f}),
+                CubeVertex({0.5f, -0.5f,  0.5f}, {1.0f, 0.0f, 0.0f}),
+                CubeVertex({0.5f, -0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}),
             });
 
             // Load indices.
-            _vecIndices.reserve(18);
+            _vecIndices.reserve(36);
             _vecIndices.insert(_vecIndices.end(), {
-                0, 3, 2,
-                2, 3, 1,
-                1, 3, 5,
-                3, 4, 5,
-                1, 5, 2,
-                2, 5, 6
+                // Top face
+                0, 1, 2, 3, 4, 5,
+                // Front face
+                6, 7, 8, 9, 10, 11,
+                // Right face
+                12, 13, 14, 15, 16, 17
             });
         }
 
