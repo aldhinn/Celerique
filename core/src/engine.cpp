@@ -39,13 +39,16 @@ void ::celerique::internal::Engine::onEvent(::std::shared_ptr<Event> ptrEvent) {
     dispatcher.dispatch<::celerique::event::EngineShutdown>(
         ::std::bind(&Engine::onEngineShutdown, this, ptrEvent), CELERIQUE_EVENT_HANDLING_STRATEGY_BLOCKING
     );
+    // Halt here if event should not propagate any longer.
+    if (!ptrEvent->shouldPropagate()) return;
+    // Propagate window and input events to layers.
+    if ((ptrEvent->category() & (CELERIQUE_EVENT_CATEGORY_WINDOW | CELERIQUE_EVENT_CATEGORY_INPUT)) == 0) return;
+
     {
         ::std::shared_lock<::std::shared_mutex> readLock(_layerMutex);
 
         // Dispatch input and window events to layers (from last to first).
-        for (auto layerRIterator = _listPtrAppLayers.rbegin(); layerRIterator != _listPtrAppLayers.rend() &&
-        (ptrEvent->category() & (CELERIQUE_EVENT_CATEGORY_WINDOW | CELERIQUE_EVENT_CATEGORY_INPUT)) != 0 &&
-        ptrEvent->shouldPropagate(); layerRIterator++) {
+        for (auto layerRIterator = _listPtrAppLayers.rbegin(); layerRIterator != _listPtrAppLayers.rend(); layerRIterator++) {
             dispatcher.dispatch<::celerique::Event>(
                 ::std::bind(&IApplicationLayer::onEvent, (*layerRIterator).get(), ptrEvent), CELERIQUE_EVENT_HANDLING_STRATEGY_BLOCKING
             );
@@ -113,12 +116,12 @@ void ::celerique::internal::Engine::onEngineShutdown(::std::shared_ptr<Event> pt
 
 /// @brief Private default constructor to prevent external instantiation.
 ::celerique::internal::Engine::Engine() {
-    celeriqueLogTrace("Initialized engine.");
+    celeriqueLogDebug("Initialized engine.");
 }
 
 /// @brief Private destructor to prevent external deletion.
 ::celerique::internal::Engine::~Engine() {
-    celeriqueLogTrace("Destroyed engine.");
+    celeriqueLogDebug("Destroyed engine.");
 }
 
 /// @brief Updates the engine.
