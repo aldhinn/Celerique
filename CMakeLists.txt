@@ -12,21 +12,16 @@ project(CeleriqueEngine VERSION ${CELERIQUE_PROJECT_VERSION})
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/language.cmake)
 
 if (NOT TARGET celerique)
-    add_subdirectory(
-        ${CMAKE_CURRENT_SOURCE_DIR}/core
-        ${CMAKE_CURRENT_BINARY_DIR}/core
-    )
+    file(GLOB_RECURSE CeleriqueSrc ${CMAKE_CURRENT_SOURCE_DIR}/core/src/*.cpp)
 
     # GUI window wrappers.
     if (WIN32)
-        add_subdirectory(
-            ${CMAKE_CURRENT_SOURCE_DIR}/win32
-            ${CMAKE_CURRENT_BINARY_DIR}/win32
+        file(GLOB_RECURSE CeleriqueSrc
+            ${CeleriqueSrc} ${CMAKE_CURRENT_SOURCE_DIR}/win32/src/*.cpp
         )
     elseif(UNIX AND NOT ANDROID AND NOT APPLE)
-        add_subdirectory(
-            ${CMAKE_CURRENT_SOURCE_DIR}/x11
-            ${CMAKE_CURRENT_BINARY_DIR}/x11
+        file(GLOB_RECURSE CeleriqueSrc
+            ${CeleriqueSrc} ${CMAKE_CURRENT_SOURCE_DIR}/x11/src/*.cpp
         )
     endif()
 
@@ -36,9 +31,37 @@ if (NOT TARGET celerique)
         ON
     )
     if(NOT CMAKE_CXX_COMPILER_ID STREQUAL "Emscripten" AND CeleriqueWrappingVulkan)
-        add_subdirectory(
-            ${CMAKE_CURRENT_SOURCE_DIR}/vulkan
-            ${CMAKE_CURRENT_BINARY_DIR}/vulkan
+        file(GLOB_RECURSE CeleriqueSrc
+            ${CeleriqueSrc} ${CMAKE_CURRENT_SOURCE_DIR}/vulkan/src/*.cpp
         )
+    endif()
+
+    # Static library.
+    add_library(celerique STATIC ${CeleriqueSrc})
+    target_include_directories(celerique PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/core/include)
+    if (WIN32)
+        target_include_directories(celerique PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/win32/include)
+    elseif(UNIX AND NOT ANDROID AND NOT APPLE)
+        target_include_directories(celerique PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/x11/include)
+    endif()
+    if(NOT CMAKE_CXX_COMPILER_ID STREQUAL "Emscripten" AND CeleriqueWrappingVulkan)
+        target_include_directories(celerique PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/vulkan/include)
+    endif()
+
+    # Shared library.
+    add_library(celerique-shared SHARED ${CeleriqueSrc})
+    target_compile_definitions(
+        celerique-shared
+        PUBLIC CELERIQUE_ENGINE_LINKED_SHARED
+        PRIVATE CELERIQUE_ENGINE_BUILDING_SHARED
+    )
+    target_include_directories(celerique-shared PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/core/include)
+    if (WIN32)
+        target_include_directories(celerique-shared PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/win32/include)
+    elseif(UNIX AND NOT ANDROID AND NOT APPLE)
+        target_include_directories(celerique-shared PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/x11/include)
+    endif()
+    if(NOT CMAKE_CXX_COMPILER_ID STREQUAL "Emscripten" AND CeleriqueWrappingVulkan)
+        target_include_directories(celerique-shared PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/vulkan/include)
     endif()
 endif()
