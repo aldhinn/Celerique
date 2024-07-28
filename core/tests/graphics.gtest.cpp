@@ -22,7 +22,7 @@ namespace celerique {
         MOCK_METHOD2(addWindow, void(UiProtocol, Pointer));
         MOCK_METHOD1(removeWindow, void(Pointer));
         MOCK_METHOD3(copyToGpuBuffer, void(void*, size_t, GpuBufferID));
-        MOCK_METHOD2(bindUniformToPipeline, void(PipelineConfigID, GpuBufferID));
+        MOCK_METHOD3(bindUniformToPipeline, void(PipelineConfigID, GpuBufferID, size_t));
         MOCK_METHOD6(draw, void(PipelineConfigID, size_t, size_t, size_t, void*, uint32_t*));
         MOCK_METHOD1(recreateSwapChain, void(Pointer));
     };

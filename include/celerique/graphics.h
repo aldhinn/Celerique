@@ -94,7 +94,8 @@ namespace celerique {
         /// @brief Bind the uniform buffer to a graphics pipeline.
         /// @param graphicsPipelineConfigId The identifier of the graphics pipeline configuration.
         /// @param uniformBufferId The identifier of the GPU buffer.
-        virtual void bindUniformToPipeline(PipelineConfigID graphicsPipelineConfigId, GpuBufferID uniformBufferId) = 0;
+        /// @param binding The binding identifier.
+        virtual void bindUniformToPipeline(PipelineConfigID graphicsPipelineConfigId, GpuBufferID uniformBufferId, size_t binding) = 0;
 
         /// @brief Graphics draw call.
         /// @param graphicsPipelineConfigId The identifier for the graphics pipeline configuration to be used for drawing.

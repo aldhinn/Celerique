@@ -49,7 +49,8 @@ namespace celerique { namespace vulkan { namespace internal {
         /// @brief Bind the uniform buffer to a graphics pipeline.
         /// @param graphicsPipelineConfigId The identifier of the graphics pipeline configuration.
         /// @param uniformBufferId The identifier of the GPU buffer.
-        void bindUniformToPipeline(PipelineConfigID graphicsPipelineConfigId, GpuBufferID uniformBufferId) override;
+        /// @param binding The binding identifier.
+        void bindUniformToPipeline(PipelineConfigID graphicsPipelineConfigId, GpuBufferID uniformBufferId, size_t binding) override;
 
         /// @brief Graphics draw call.
         /// @param graphicsPipelineConfigId The identifier for the graphics pipeline configuration to be used for drawing.

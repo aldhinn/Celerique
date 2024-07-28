@@ -78,8 +78,9 @@ void celerique::vulkan::internal::GraphicsAPI::copyToGpuBuffer(
 /// @brief Bind the uniform buffer to a graphics pipeline.
 /// @param graphicsPipelineConfigId The identifier of the graphics pipeline configuration.
 /// @param uniformBufferId The identifier of the GPU buffer.
+/// @param binding The binding identifier.
 void celerique::vulkan::internal::GraphicsAPI::bindUniformToPipeline(
-    PipelineConfigID graphicsPipelineConfigId, GpuBufferID uniformBufferId
+    PipelineConfigID graphicsPipelineConfigId, GpuBufferID uniformBufferId, size_t binding
 ) {
     // TODO: Implement.
 }
