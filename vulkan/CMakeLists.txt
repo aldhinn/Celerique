@@ -117,7 +117,7 @@ if (NOT TARGET CeleriqueEngineVulkanPlugin)
             CeleriqueEngineVulkanPluginUnitTestingCpp PRIVATE
             ${CMAKE_CURRENT_SOURCE_DIR}/include ${Vulkan_INCLUDE_DIR}
         )
-        gtest_discover_tests(CeleriqueEngineVulkanPluginUnitTestingCpp)
+        add_test(CeleriqueEngineVulkanPluginUnitTestingCpp CeleriqueEngineVulkanPluginUnitTestingCpp)
 
         # Compile test shaders.
         file(GLOB_RECURSE shaderSrcFiles
