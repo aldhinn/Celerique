@@ -130,8 +130,14 @@ namespace celerique {
 
     // Copying and moving.
     public:
+#if defined(_MSC_VER) && defined(CELERIQUE_ENGINE_LINKED_SHARED)
+        /// @brief Copy constructor.
+        /// @param other The other instance to be copied.
+        ShaderProgram(const ShaderProgram& other);
+#else
         /// @brief Copying prevented.
         ShaderProgram(const ShaderProgram&) = delete;
+#endif
         /// @brief Move constructor.
         /// @param other The r-value reference to the other shader program
         /// container instance where the data is moving from.

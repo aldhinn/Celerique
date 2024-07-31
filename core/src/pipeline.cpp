@@ -73,6 +73,15 @@ License: Mozilla Public License 2.0. (See ./LICENSE).
 /// @param ptrBuffer The pointer to the heap allocated buffer containing the shader program.
 ::celerique::ShaderProgram::ShaderProgram(size_t size, ::celerique::Byte* ptrBuffer) : _size(size), _ptrBuffer(ptrBuffer) {}
 
+#if defined(_MSC_VER) && defined(CELERIQUE_ENGINE_LINKED_SHARED)
+/// @brief Copy constructor.
+/// @param other The other instance to be copied.
+::celerique::ShaderProgram::ShaderProgram(const ShaderProgram& other) : _size(other._size) {
+    _ptrBuffer = new Byte[_size];
+    ::std::copy(other._ptrBuffer, other._ptrBuffer + _size, _ptrBuffer);
+}
+#endif
+
 /// @brief Move constructor.
 /// @param other The r-value reference to the other shader program
 /// container instance where the data is moving from.
