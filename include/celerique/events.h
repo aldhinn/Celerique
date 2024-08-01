@@ -66,9 +66,8 @@ namespace celerique {
         /// @brief Determines whether this event should propagate or not.
         /// @return `_shouldPropagate` value.
         inline bool shouldPropagate() const { return _atomicShouldPropagate.load(); }
-        /// @brief The propagation will now set to completion
-        /// and will no longer propagate.
-        virtual void completePropagation() { _atomicShouldPropagate.store(false); }
+        /// @brief The propagation will now set to completion and will no longer propagate.
+        virtual void completePropagation() { _atomicShouldPropagate.store(false, ::std::memory_order_release); }
 
         /// @brief The category this event belongs to.
         /// @return The event category value.

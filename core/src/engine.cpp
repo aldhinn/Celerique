@@ -109,7 +109,7 @@ void ::celerique::internal::Engine::run() {
 /// @brief The event handler for engine shutdown event.
 /// @param ptrEvent The shared pointer to the event being dispatched.
 void ::celerique::internal::Engine::onEngineShutdown(::std::shared_ptr<Event> ptrEvent) {
-    _atomicShouldAppLoopRunning.store(false);
+    _atomicShouldAppLoopRunning.store(false, ::std::memory_order_release);
     ptrEvent->completePropagation();
     celeriqueLogTrace("Engine shutdown event was dispatched.");
 }

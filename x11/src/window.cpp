@@ -63,8 +63,8 @@ License: Mozilla Public License 2.0. (See ./LICENSE).
     _uiProtocol = CELERIQUE_UI_PROTOCOL_X11;
 
     // Track window size.
-    _atomicRecentWindowWidth.store(defaultWidth);
-    _atomicRecentWindowHeight.store(defaultHeight);
+    _atomicRecentWindowWidth.store(defaultWidth, ::std::memory_order_release);
+    _atomicRecentWindowHeight.store(defaultHeight, ::std::memory_order_release);
 
     // Set window title.
     XStoreName(_ptrDisplay, xWindowId, title.c_str());
@@ -128,8 +128,8 @@ void ::celerique::x11::internal::Window::onUpdate(::std::shared_ptr<IUpdateData>
                 CELERIQUE_EVENT_HANDLING_STRATEGY_ASYNC
             );
             // Update window position.
-            _atomicRecentWindowXPos.store(xPos);
-            _atomicRecentWindowYPos.store(yPos);
+            _atomicRecentWindowXPos.store(xPos, ::std::memory_order_release);
+            _atomicRecentWindowYPos.store(yPos, ::std::memory_order_release);
         }
         // Checking if the window resized.
         if (width != _atomicRecentWindowWidth.load() || height != _atomicRecentWindowHeight.load()) {
@@ -138,8 +138,8 @@ void ::celerique::x11::internal::Window::onUpdate(::std::shared_ptr<IUpdateData>
                 CELERIQUE_EVENT_HANDLING_STRATEGY_ASYNC
             );
             // Update window sizes.
-            _atomicRecentWindowWidth.store(width);
-            _atomicRecentWindowHeight.store(height);
+            _atomicRecentWindowWidth.store(width, ::std::memory_order_release);
+            _atomicRecentWindowHeight.store(height, ::std::memory_order_release);
 
             ::std::thread recreateSwapChainThread([&]() {
                 /// @brief The retrieved shared pointer of this window's graphics API interface.
@@ -158,7 +158,7 @@ void ::celerique::x11::internal::Window::onUpdate(::std::shared_ptr<IUpdateData>
             ::std::make_shared<::celerique::event::WindowFocused>(),
             CELERIQUE_EVENT_HANDLING_STRATEGY_ASYNC
         );
-        _atomicIsActive.store(true);
+        _atomicIsActive.store(true, ::std::memory_order_release);
     } return;
 
     case PropertyNotify: {
@@ -184,7 +184,7 @@ void ::celerique::x11::internal::Window::onUpdate(::std::shared_ptr<IUpdateData>
                             ::std::make_shared<::celerique::event::WindowMinimized>(),
                             CELERIQUE_EVENT_HANDLING_STRATEGY_ASYNC
                         );
-                        _atomicIsActive.store(false);
+                        _atomicIsActive.store(false, ::std::memory_order_release);
                     }
                 }
                 XFree(ptrProp);
@@ -203,10 +203,10 @@ void ::celerique::x11::internal::Window::onUpdate(::std::shared_ptr<IUpdateData>
         // If the mouse hasn't been getting tracked.
         if (!_atomicMousePointerTracking.load()) {
             // Record mouse positions.
-            _atomicRecentMouseXPos.store(static_cast<PixelUnits>(x11Event.xmotion.x));
-            _atomicRecentMouseYPos.store(static_cast<PixelUnits>(x11Event.xmotion.x));
+            _atomicRecentMouseXPos.store(static_cast<PixelUnits>(x11Event.xmotion.x), ::std::memory_order_release);
+            _atomicRecentMouseYPos.store(static_cast<PixelUnits>(x11Event.xmotion.x), ::std::memory_order_release);
             // Start tracking mouse pointer.
-            _atomicMousePointerTracking.store(true);
+            _atomicMousePointerTracking.store(true, ::std::memory_order_release);
             // Halt from here on.
             return;
         }
@@ -216,20 +216,20 @@ void ::celerique::x11::internal::Window::onUpdate(::std::shared_ptr<IUpdateData>
             CELERIQUE_EVENT_HANDLING_STRATEGY_ASYNC
         );
         // Update position.
-        _atomicRecentMouseXPos.store(static_cast<PixelUnits>(x11Event.xmotion.x));
-        _atomicRecentMouseYPos.store(static_cast<PixelUnits>(x11Event.xmotion.x));
+        _atomicRecentMouseXPos.store(static_cast<PixelUnits>(x11Event.xmotion.x), ::std::memory_order_release);
+        _atomicRecentMouseYPos.store(static_cast<PixelUnits>(x11Event.xmotion.x), ::std::memory_order_release);
     } return;
 
     case EnterNotify: {
         // Record mouse positions.
-        _atomicRecentMouseXPos.store(static_cast<PixelUnits>(x11Event.xmotion.x));
-        _atomicRecentMouseYPos.store(static_cast<PixelUnits>(x11Event.xmotion.x));
+        _atomicRecentMouseXPos.store(static_cast<PixelUnits>(x11Event.xmotion.x), ::std::memory_order_release);
+        _atomicRecentMouseYPos.store(static_cast<PixelUnits>(x11Event.xmotion.x), ::std::memory_order_release);
         // Start tracking mouse pointer.
-        _atomicMousePointerTracking.store(true);
+        _atomicMousePointerTracking.store(true, ::std::memory_order_release);
     } return;
 
     case LeaveNotify: {
-        _atomicMousePointerTracking.store(false);
+        _atomicMousePointerTracking.store(false, ::std::memory_order_release);
     } return;
 
     case ButtonPress: {

@@ -366,10 +366,10 @@ LRESULT CALLBACK ::celerique::win32::internal::Window::WindowProc(
         // The mouse pointer was recently outside the viewport.
         if (!ptrWindow->_atomicMousePointerTracking.load()) {
             // Record mouse positions.
-            ptrWindow->_atomicRecentMouseXPos.store(static_cast<PixelUnits>(LOWORD(lParam)));
-            ptrWindow->_atomicRecentMouseYPos.store(static_cast<PixelUnits>(HIWORD(lParam)));
+            ptrWindow->_atomicRecentMouseXPos.store(static_cast<PixelUnits>(LOWORD(lParam)), ::std::memory_order_release);
+            ptrWindow->_atomicRecentMouseYPos.store(static_cast<PixelUnits>(HIWORD(lParam)), ::std::memory_order_release);
             // Start tracking mouse pointer.
-            ptrWindow->_atomicMousePointerTracking.store(true);
+            ptrWindow->_atomicMousePointerTracking.store(true, ::std::memory_order_release);
 
             // Halt from here on.
             return 0;
@@ -381,13 +381,13 @@ LRESULT CALLBACK ::celerique::win32::internal::Window::WindowProc(
         );
 
         // Update recent data.
-        ptrWindow->_atomicRecentMouseXPos.store(static_cast<PixelUnits>(LOWORD(lParam)));
-        ptrWindow->_atomicRecentMouseYPos.store(static_cast<PixelUnits>(HIWORD(lParam)));
+        ptrWindow->_atomicRecentMouseXPos.store(static_cast<PixelUnits>(LOWORD(lParam)), ::std::memory_order_release);
+        ptrWindow->_atomicRecentMouseYPos.store(static_cast<PixelUnits>(HIWORD(lParam)), ::std::memory_order_release);
     } return 0;
 
     case WM_MOUSELEAVE: {
         // Stop tracking mouse pointer.
-        ptrWindow->_atomicMousePointerTracking.store(false);
+        ptrWindow->_atomicMousePointerTracking.store(false, ::std::memory_order_release);
     } return 0;
 
     case WM_LBUTTONDOWN: {
