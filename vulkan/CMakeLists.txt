@@ -118,7 +118,14 @@ if (NOT TARGET CeleriqueEngineVulkanPlugin)
             ${CMAKE_CURRENT_SOURCE_DIR}/include ${Vulkan_INCLUDE_DIR}
         )
         add_test(CeleriqueEngineVulkanPluginUnitTestingCpp CeleriqueEngineVulkanPluginUnitTestingCpp)
+    endif()
 
+    option(
+        BuildCeleriqueEngineVulkanPluginDrawTests
+        "The Switch that enables building the Vulkan plugin draw tests."
+        OFF
+    )
+    if (BuildCeleriqueEngineVulkanPluginDrawTests OR PROJECT_IS_TOP_LEVEL)
         # Compile test shaders.
         file(GLOB_RECURSE shaderSrcFiles
             ${CMAKE_CURRENT_SOURCE_DIR}/tests/*.frag
