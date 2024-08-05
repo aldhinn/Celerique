@@ -19,8 +19,11 @@ namespace celerique {
     /// @brief An implementation of an interface to a mock graphics API.
     class MockGraphicsApi : public IGraphicsAPI {
     public:
+        MOCK_METHOD1(addGraphicsPipelineConfig, PipelineConfigID(PipelineConfig&&));
+        MOCK_METHOD1(removeGraphicsPipelineConfig, void(PipelineConfigID));
         MOCK_METHOD2(addWindow, void(UiProtocol, Pointer));
         MOCK_METHOD1(removeWindow, void(Pointer));
+        MOCK_METHOD1(createBuffer, GpuBufferID(size_t));
         MOCK_METHOD3(copyToGpuBuffer, void(void*, size_t, GpuBufferID));
         MOCK_METHOD3(bindUniformToPipeline, void(PipelineConfigID, GpuBufferID, size_t));
         MOCK_METHOD6(draw, void(PipelineConfigID, size_t, size_t, size_t, void*, uint32_t*));
@@ -76,73 +79,5 @@ namespace celerique {
 
         _ptrWindow->useGraphicsApi(_ptrGraphicsApi);
         _ptrWindow.reset();
-    }
-
-    TEST_F(GraphicsUnitTestCpp, graphicsPipelineConfigIdStartsAt0) {
-        /// @brief Mock graphics API instance.
-        MockGraphicsApi mockGraphicsApi;
-
-        GTEST_ASSERT_EQ(mockGraphicsApi.addGraphicsPipelineConfig(PipelineConfig()), 0);
-        // Reset.
-        mockGraphicsApi.clearGraphicsPipelineConfigs();
-        // It should be back to 0.
-        GTEST_ASSERT_EQ(mockGraphicsApi.addGraphicsPipelineConfig(PipelineConfig()), 0);
-    }
-
-    TEST_F(GraphicsUnitTestCpp, verifyGraphicsPipelineUniqueIdGeneration) {
-        /// @brief The number of iterations of ID generation calls.
-        const uint32_t iterations = 1000;
-        /// @brief Mock graphics API instance.
-        MockGraphicsApi mockGraphicsApi;
-        /// @brief The container of IDs generated.
-        ::std::list<PipelineConfigID> listGeneratedIds;
-
-        // Generate IDs
-        for (uint32_t i = 0; i < iterations; i++) {
-            listGeneratedIds.push_back(mockGraphicsApi.addGraphicsPipelineConfig(PipelineConfig()));
-        }
-
-        /// @brief The container for the IDs that were iterated over.
-        ::std::unordered_set<PipelineConfigID> setIteratedOverIds;
-        // Iterate over the generated IDs and examine them one by one for duplicates.
-        for (PipelineConfigID configId : listGeneratedIds) {
-            // If the current config id is in `setIteratedOverIds`, then a duplicate exists.
-            if (setIteratedOverIds.find(configId) != setIteratedOverIds.end()) {
-                GTEST_ASSERT_FALSE(true);
-            }
-            setIteratedOverIds.insert(configId);
-        }
-    }
-
-    TEST_F(GraphicsUnitTestCpp, bufferIdStartsAt0) {
-        /// @brief Mock graphics API instance.
-        MockGraphicsApi mockGraphicsApi;
-
-        GTEST_ASSERT_EQ(mockGraphicsApi.createBuffer(3), 0);
-    }
-
-    TEST_F(GraphicsUnitTestCpp, verifyBufferIdUniqueGeneration) {
-        /// @brief The number of iterations of ID generation calls.
-        const uint32_t iterations = 1000;
-        /// @brief Mock graphics API instance.
-        MockGraphicsApi mockGraphicsApi;
-        /// @brief The container of IDs generated.
-        ::std::list<GpuBufferID> listGeneratedIds;
-
-        // Generate IDs
-        for (uint32_t i = 0; i < iterations; i++) {
-            listGeneratedIds.push_back(mockGraphicsApi.createBuffer(2));
-        }
-
-        /// @brief The container for the IDs that were iterated over.
-        ::std::unordered_set<GpuBufferID> setIteratedOverIds;
-        // Iterate over the generated IDs and examine them one by one for duplicates.
-        for (GpuBufferID configId : listGeneratedIds) {
-            // If the current config id is in `setIteratedOverIds`, then a duplicate exists.
-            if (setIteratedOverIds.find(configId) != setIteratedOverIds.end()) {
-                GTEST_ASSERT_FALSE(true);
-            }
-            setIteratedOverIds.insert(configId);
-        }
     }
 }

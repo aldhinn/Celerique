@@ -72,19 +72,17 @@ namespace celerique {
         /// @brief Add a graphics pipeline configuration.
         /// @param graphicsPipelineConfig The graphics pipeline configuration.
         /// @return The unique identifier to the graphics pipeline configuration that was just added.
-        virtual PipelineConfigID addGraphicsPipelineConfig(
-            PipelineConfig&& graphicsPipelineConfig
-        );
+        virtual PipelineConfigID addGraphicsPipelineConfig(PipelineConfig&& graphicsPipelineConfig) = 0;
         /// @brief Remove the graphics pipeline configuration specified.
         /// @param graphicsPipelineConfigId The identifier of the graphics pipeline configuration to be removed.
-        virtual void removeGraphicsPipelineConfig(PipelineConfigID graphicsPipelineConfigId);
+        virtual void removeGraphicsPipelineConfig(PipelineConfigID graphicsPipelineConfigId) = 0;
         /// @brief Clear the collection of graphics pipeline configurations.
         virtual void clearGraphicsPipelineConfigs();
 
         /// @brief Create and allocate a buffer in the GPU. No need to de-allocate the buffer created from this function as the engine shall manage it's lifecycle.
         /// @param bufferSize The size of the buffer in bytes.
         /// @return The unique identifier for the GPU buffer.
-        virtual GpuBufferID createBuffer(size_t bufferSize);
+        virtual GpuBufferID createBuffer(size_t bufferSize) = 0;
         /// @brief Copy the data from the CPU to the GPU.
         /// @param ptrBufferSrc The pointer to the data source buffer.
         /// @param dataSrcSize The size of the data to be copied.
@@ -122,8 +120,6 @@ namespace celerique {
 
     // Protected member variables.
     protected:
-        /// @brief The map of config identifiers to graphics pipeline configurations.
-        ::std::unordered_map<PipelineConfigID, PipelineConfig> _mapIdToGraphicsPipelineConfig;
         /// @brief The value of the next graphics pipeline config identifier value.
         PipelineConfigID _nextGraphicsPipelineConfigId = 0;
         /// @brief The value of the next buffer identifier value.

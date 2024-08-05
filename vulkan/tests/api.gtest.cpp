@@ -45,8 +45,11 @@ namespace celerique { namespace vulkan {
     /// @brief An implementation to the interface to a mock graphics API.
     class MockGraphicsAPI : public IGraphicsAPI {
     public:
+        MOCK_METHOD1(addGraphicsPipelineConfig, PipelineConfigID(PipelineConfig&&));
+        MOCK_METHOD1(removeGraphicsPipelineConfig, void(PipelineConfigID));
         MOCK_METHOD2(addWindow, void(UiProtocol, Pointer));
         MOCK_METHOD1(removeWindow, void(Pointer));
+        MOCK_METHOD1(createBuffer, GpuBufferID(size_t));
         MOCK_METHOD3(copyToGpuBuffer, void(void*, size_t, GpuBufferID));
         MOCK_METHOD3(bindUniformToPipeline, void(PipelineConfigID, GpuBufferID, size_t));
         MOCK_METHOD6(draw, void(PipelineConfigID, size_t, size_t, size_t, void*, uint32_t*));

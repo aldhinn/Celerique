@@ -32,42 +32,9 @@ void ::celerique::IWindow::useGraphicsApi(::std::shared_ptr<IGraphicsAPI> ptrGra
     }
 }
 
-/// @brief Add a graphics pipeline configuration.
-/// @param graphicsPipelineConfig The graphics pipeline configuration.
-/// @return The unique identifier to the graphics pipeline configuration that was just added.
-::celerique::PipelineConfigID celerique::IGraphicsAPI::addGraphicsPipelineConfig(
-    PipelineConfig&& graphicsPipelineConfig
-) {
-    /// @brief The current id of the pipeline config ID to be mapped.
-    PipelineConfigID currentId = _nextGraphicsPipelineConfigId;
-    // Add the graphics pipeline.
-    _mapIdToGraphicsPipelineConfig[currentId] = ::std::move(graphicsPipelineConfig);
-    // Update next ID value.
-    _nextGraphicsPipelineConfigId++;
-    return currentId;
-}
-
-/// @brief Remove the graphics pipeline configuration specified.
-/// @param graphicsPipelineConfigId The identifier of the graphics pipeline configuration to be removed.
-void ::celerique::IGraphicsAPI::removeGraphicsPipelineConfig(PipelineConfigID graphicsPipelineConfigId) {
-    /// @brief The iterator to the specified graphics pipeline configuration.
-    auto iteratorGraphicsPipelineConfig = _mapIdToGraphicsPipelineConfig.find(graphicsPipelineConfigId);
-    // Remove if found.
-    if (iteratorGraphicsPipelineConfig != _mapIdToGraphicsPipelineConfig.end())
-        _mapIdToGraphicsPipelineConfig.erase(iteratorGraphicsPipelineConfig);
-}
-
 /// @brief Clear the collection of graphics pipeline configurations.
 void ::celerique::IGraphicsAPI::clearGraphicsPipelineConfigs() {
-    _mapIdToGraphicsPipelineConfig.clear();
     _nextGraphicsPipelineConfigId = 0;
-}
-
-/// @brief Create and allocate a buffer in the GPU. No need to de-allocate the buffer created from this function as the engine shall manage it's lifecycle.
-/// @param bufferSize The size of the buffer in bytes.
-/// @return The unique identifier for the GPU buffer.
-::celerique::GpuBufferID celerique::IGraphicsAPI::createBuffer(size_t bufferSize) {
-    return _nextBufferId++;
 }
 
 /// @brief Pure virtual destructor.

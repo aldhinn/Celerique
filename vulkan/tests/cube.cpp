@@ -50,7 +50,7 @@ namespace celerique {
             normalLayout.offset = offsetof(CubeVertex, _normal);
 
             listVertexInputLayouts.emplace_back(normalLayout);
-            celeriqueLogDebug("offsetof(CubeVertex, _position) = " + ::std::to_string(offsetof(CubeVertex, _normal)));
+            celeriqueLogDebug("offsetof(CubeVertex, _normal) = " + ::std::to_string(offsetof(CubeVertex, _normal)));
 
             return listVertexInputLayouts;
         }

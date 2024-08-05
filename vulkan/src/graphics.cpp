@@ -40,14 +40,15 @@ License: Mozilla Public License 2.0. (See ./LICENSE).
     /// @brief The current id of the pipeline config ID to be mapped.
     PipelineConfigID currentId = _nextGraphicsPipelineConfigId;
     refManager.addGraphicsPipeline(&graphicsPipelineConfig, currentId);
-    return IGraphicsAPI::addGraphicsPipelineConfig(::std::move(graphicsPipelineConfig));
+    // Update next ID value.
+    _nextGraphicsPipelineConfigId++;
+    return currentId;
 }
 
 /// @brief Remove the graphics pipeline configuration specified.
 /// @param graphicsPipelineConfigId The identifier of the graphics pipeline configuration to be removed.
 void ::celerique::vulkan::internal::GraphicsAPI::removeGraphicsPipelineConfig(PipelineConfigID graphicsPipelineConfigId) {
     refManager.removeGraphicsPipeline(graphicsPipelineConfigId);
-    IGraphicsAPI::removeGraphicsPipelineConfig(graphicsPipelineConfigId);
 }
 
 /// @brief Clear the collection of graphics pipeline configurations.
@@ -60,9 +61,14 @@ void ::celerique::vulkan::internal::GraphicsAPI::clearGraphicsPipelineConfigs() 
 /// @param bufferSize The size of the buffer in bytes.
 /// @return The unique identifier for the GPU buffer.
 celerique::GpuBufferID celerique::vulkan::internal::GraphicsAPI::createBuffer(size_t bufferSize) {
+    /// @brief The unique identifier for the GPU buffer.
+    PipelineConfigID currentId = _nextGraphicsPipelineConfigId;
+
     // TODO: Implement.
 
-    return IGraphicsAPI::createBuffer(bufferSize);
+    // Update next ID value.
+    _nextBufferId++;
+    return currentId;
 }
 
 /// @brief Copy the data from the CPU to the GPU.
