@@ -77,4 +77,22 @@ if (NOT TARGET celerique)
         target_include_directories(celerique-shared PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/vulkan/include ${Vulkan_INCLUDE_DIR})
         target_link_libraries(celerique-shared PRIVATE ${Vulkan_LIBRARIES})
     endif()
+
+    option(
+        BuildCeleriqueEngineUnitTests
+        "The switch to turn on unit testing for the entire engine."
+        OFF
+    )
+    if (BuildCeleriqueEngineUnitTests)
+        enable_testing()
+
+        set(BuildCeleriqueEngineCoreUnitTestingCpp ON)
+        set(BuildCeleriqueEngineCoreUnitTestingC ON)
+        set(BuildCeleriqueEngineVulkanPluginUnitTestingCpp ON)
+
+        add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/core ${CMAKE_CURRENT_BINARY_DIR}/core)
+        if(NOT CMAKE_CXX_COMPILER_ID STREQUAL "Emscripten" AND CeleriqueWrappingVulkan)
+            add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/vulkan ${CMAKE_CURRENT_BINARY_DIR}/vulkan)
+        endif()
+    endif()
 endif()
