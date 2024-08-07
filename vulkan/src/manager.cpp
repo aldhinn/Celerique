@@ -313,7 +313,7 @@ void ::celerique::vulkan::internal::Manager::draw(
     ::std::shared_lock<::std::shared_mutex> readLock(_sharedMutex);
 
     /// @brief The container for the thread handles that executes the draw calls for each window.
-    ::std::vector<::std::thread> vecDrawCallThreads;
+    ::std::list<::std::thread> listDrawCallThreads;
     // Iterate over all windows to be drawn.
     for (const auto& pairWindowToSurface : _mapWindowToSurface) {
         /// @brief The window handle.
@@ -324,11 +324,11 @@ void ::celerique::vulkan::internal::Manager::draw(
             vertexStride, numVertexElements, ptrVertexBuffer, ptrIndexBuffer
         ));
         // Collect thread handle.
-        vecDrawCallThreads.emplace_back(::std::move(drawCallThread));
+        listDrawCallThreads.emplace_back(::std::move(drawCallThread));
     }
     // Wait on all draw call threads to finish before exiting.
-    for (::std::thread& drawCallThread : vecDrawCallThreads) {
-        drawCallThread.join();
+    for (::std::thread& refDrawCallThread : listDrawCallThreads) {
+        refDrawCallThread.join();
     }
 }
 
