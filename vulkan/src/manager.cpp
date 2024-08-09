@@ -108,14 +108,13 @@ void ::celerique::vulkan::internal::Manager::addGraphicsPipeline(
     ::std::vector<VkPipelineShaderStageCreateInfo> vecShaderStageCreateInfos = constructVecShaderStageCreateInfos(
         graphicsLogicalDevice, ptrGraphicsPipelineConfig
     );
-    /// @brief The vector of shader modules associated with the graphics pipeline configuration identifier.
-    ::std::vector<VkShaderModule> vecShaderModules;
-    vecShaderModules.reserve(vecShaderStageCreateInfos.size());
+    /// @brief The list of shader modules associated with the graphics pipeline configuration identifier.
+    ::std::list<VkShaderModule> listShaderModules;
     // Retrieve shader modules.
     for (VkPipelineShaderStageCreateInfo shaderStageInfo : vecShaderStageCreateInfos) {
-        vecShaderModules.push_back(shaderStageInfo.module);
+        listShaderModules.push_back(shaderStageInfo.module);
     }
-    _mapGraphicsPipelineIdToVecShaderModules[currentId] = ::std::move(vecShaderModules);
+    _mapGraphicsPipelineIdToListShaderModules[currentId] = ::std::move(listShaderModules);
 
     /// @brief The collection of vulkan dynamic states.
     VkDynamicState arrDynamicState[] = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR };
@@ -247,16 +246,16 @@ void ::celerique::vulkan::internal::Manager::removeGraphicsPipeline(PipelineConf
     _mapGraphicsPipelineIdToPipelineLayout.erase(graphicsPipelineConfigId);
     _mapPipelineLayoutToLogicDev.erase(graphicsPipelineLayout);
 
-    /// @brief The vector of shader modules associated with the graphics pipeline configuration identifier.
-    ::std::vector<VkShaderModule> vecShaderModules = _mapGraphicsPipelineIdToVecShaderModules[graphicsPipelineConfigId];
+    /// @brief The list of shader modules associated with the graphics pipeline configuration identifier.
+    const ::std::list<VkShaderModule>& listShaderModules = _mapGraphicsPipelineIdToListShaderModules[graphicsPipelineConfigId];
     // Iterate and destroy.
-    for (VkShaderModule shaderModule : vecShaderModules) {
+    for (VkShaderModule shaderModule : listShaderModules) {
         vkDestroyShaderModule(graphicsLogicalDevice, shaderModule, nullptr);
         // Erase reference.
         _mapShaderModuleToLogicDev.erase(shaderModule);
     }
     // Erase.
-    _mapGraphicsPipelineIdToVecShaderModules.erase(graphicsPipelineConfigId);
+    _mapGraphicsPipelineIdToListShaderModules.erase(graphicsPipelineConfigId);
 }
 
 /// @brief Clear the collection of graphics pipelines.
@@ -286,16 +285,16 @@ void ::celerique::vulkan::internal::Manager::clearGraphicsPipelines() {
         _mapGraphicsPipelineIdToPipelineLayout.erase(graphicsPipelineConfigId);
         _mapPipelineLayoutToLogicDev.erase(graphicsPipelineLayout);
 
-        /// @brief The vector of shader modules associated with the graphics pipeline configuration identifier.
-        ::std::vector<VkShaderModule> vecShaderModules = _mapGraphicsPipelineIdToVecShaderModules[graphicsPipelineConfigId];
+        /// @brief The list of shader modules associated with the graphics pipeline configuration identifier.
+        const ::std::list<VkShaderModule>& listShaderModules = _mapGraphicsPipelineIdToListShaderModules[graphicsPipelineConfigId];
         // Iterate and destroy.
-        for (VkShaderModule shaderModule : vecShaderModules) {
+        for (VkShaderModule shaderModule : listShaderModules) {
             vkDestroyShaderModule(graphicsLogicalDevice, shaderModule, nullptr);
             // Erase reference.
             _mapShaderModuleToLogicDev.erase(shaderModule);
         }
         // Erase.
-        _mapGraphicsPipelineIdToVecShaderModules.erase(graphicsPipelineConfigId);
+        _mapGraphicsPipelineIdToListShaderModules.erase(graphicsPipelineConfigId);
     }
 }
 

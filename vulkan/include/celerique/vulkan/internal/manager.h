@@ -417,7 +417,7 @@ namespace celerique { namespace vulkan { namespace internal {
         /// @brief The map of a graphics pipeline identifier to its vulkan pipelines.
         ::std::unordered_map<PipelineConfigID, VkPipeline> _mapGraphicsPipelineIdToPipeline;
         /// @brief The map of a graphics pipeline identifier to its shader modules.
-        ::std::unordered_map<PipelineConfigID, ::std::vector<VkShaderModule>> _mapGraphicsPipelineIdToVecShaderModules;
+        ::std::unordered_map<PipelineConfigID, ::std::list<VkShaderModule>> _mapGraphicsPipelineIdToListShaderModules;
         /// @brief The map of a shader module to the logical device that created it.
         ::std::unordered_map<VkShaderModule, VkDevice> _mapShaderModuleToLogicDev;
         /// @brief The map of a pipeline layout to the logical device that created it.
