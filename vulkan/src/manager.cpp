@@ -2173,7 +2173,7 @@ void celerique::vulkan::internal::Manager::fillMeshBuffer(
     // Populate vertex attributes.
     for (const InputLayout& inputLayout : listInputLayouts) {
         VkVertexInputAttributeDescription vertexAttributeDescription = {};
-        vertexAttributeDescription.binding = 0;
+        vertexAttributeDescription.binding = inputLayout.bindingPoint;
         vertexAttributeDescription.location = inputLayout.location;
         vertexAttributeDescription.offset = inputLayout.offset;
 

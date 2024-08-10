@@ -21,12 +21,10 @@ namespace celerique {
     public:
         MOCK_METHOD1(addGraphicsPipelineConfig, PipelineConfigID(PipelineConfig&&));
         MOCK_METHOD1(removeGraphicsPipelineConfig, void(PipelineConfigID));
+        MOCK_METHOD4(updateUniform, void(PipelineConfigID, size_t, void*, size_t));
+        MOCK_METHOD6(draw, void(PipelineConfigID, size_t, size_t, size_t, void*, uint32_t*));
         MOCK_METHOD2(addWindow, void(UiProtocol, Pointer));
         MOCK_METHOD1(removeWindow, void(Pointer));
-        MOCK_METHOD1(createUniformBuffer, GpuBufferID(size_t));
-        MOCK_METHOD3(bindUniformToPipeline, void(PipelineConfigID, GpuBufferID, size_t));
-        MOCK_METHOD3(copyToGpuBuffer, void(void*, size_t, GpuBufferID));
-        MOCK_METHOD6(draw, void(PipelineConfigID, size_t, size_t, size_t, void*, uint32_t*));
         MOCK_METHOD1(reCreateSwapChain, void(Pointer));
     };
     /// @brief A mock implementation of an interface to a graphical user interface window.

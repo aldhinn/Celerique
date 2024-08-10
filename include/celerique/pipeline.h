@@ -18,7 +18,6 @@ License: Mozilla Public License 2.0. (See ./LICENSE).
 typedef uint8_t CeleriqueShaderSrcLang;
 /// @brief Null value for `CeleriqueShaderSrcLang` type.
 #define CELERIQUE_SHADER_SRC_LANG_NULL                                                      0x00
-
 /// @brief Using GLSL to write the shader program.
 #define CELERIQUE_SHADER_SRC_LANG_GLSL                                                      0x01
 /// @brief Using HLSL to write the shader program.
@@ -28,7 +27,6 @@ typedef uint8_t CeleriqueShaderSrcLang;
 typedef uint8_t CeleriqueShaderStage;
 /// @brief Null value for `CeleriqueShaderStage` type.
 #define CELERIQUE_SHADER_STAGE_NULL                                                         0x00
-
 /// @brief In reference to the vertex shader stage.
 #define CELERIQUE_SHADER_STAGE_VERTEX                                                       0x01
 /// @brief In reference to the tessellation control shader stage.
@@ -50,16 +48,10 @@ typedef uint8_t CeleriqueShaderStage;
 /// @brief In reference to an unspecified shader stage.
 #define CELERIQUE_SHADER_STAGE_UNSPECIFIED                                                  0xFF
 
-/// @brief The type of the pipeline configuration unique identifier.
-typedef uintptr_t CeleriquePipelineConfigID;
-/// @brief The type of a GPU buffer unique identifier.
-typedef uintptr_t CeleriqueGpuBufferID;
-
 /// @brief The type of a particular pipeline input variable.
 typedef uint8_t CeleriquePipelineInputType;
 /// @brief Null value for `CeleriquePipelineInputType` type.
 #define CELERIQUE_PIPELINE_INPUT_TYPE_NULL                                                  0x00
-
 /// @brief Float pipeline input type.
 #define CELERIQUE_PIPELINE_INPUT_TYPE_FLOAT                                                 0x01
 /// @brief Integer pipeline input type.
@@ -68,6 +60,9 @@ typedef uint8_t CeleriquePipelineInputType;
 #define CELERIQUE_PIPELINE_INPUT_TYPE_DOUBLE                                                0x03
 /// @brief Boolean pipeline input type.
 #define CELERIQUE_PIPELINE_INPUT_TYPE_BOOLEAN                                               0x04
+
+/// @brief The type of the pipeline configuration unique identifier.
+typedef uintptr_t CeleriquePipelineConfigID;
 
 // Begin C++ Only Region.
 #if defined(__cplusplus)
@@ -78,8 +73,6 @@ typedef uint8_t CeleriquePipelineInputType;
 namespace celerique {
     /// @brief The type of the pipeline configuration unique identifier.
     typedef CeleriquePipelineConfigID PipelineConfigID;
-    /// @brief The type of a GPU buffer unique identifier.
-    typedef CeleriqueGpuBufferID GpuBufferID;
     /// @brief The type of a pipeline shader stage.
     typedef CeleriqueShaderStage ShaderStage;
     /// @brief The type of programming language the shader was written on.
@@ -161,9 +154,11 @@ namespace celerique {
         /// @brief Member init constructor.
         /// @param mapStageTypeToShaderProgram The map of shader stages to their corresponding shader programs.
         /// @param listVertexInputLayouts The collection of layouts of vertex inputs.
+        /// @param listUnformInputLayouts The collection of layouts of uniform inputs.
         PipelineConfig(
             ::std::unordered_map<ShaderStage, ShaderProgram>&& mapShaderStageToShaderProgram = {},
-            ::std::list<InputLayout>&& listVertexInputLayouts = {}
+            ::std::list<InputLayout>&& listVertexInputLayouts = {},
+            ::std::list<InputLayout>&& listUnformInputLayouts = {}
         );
 
         /// @brief Access the shader program of a particular shader stage.
@@ -184,6 +179,13 @@ namespace celerique {
         /// @return The reference to `_listVertexInputLayouts`.
         ::std::list<InputLayout>& listVertexInputLayouts();
 
+        /// @brief The collection of layouts of uniform inputs.
+        /// @return The const reference to `_listUnformInputLayouts`.
+        const ::std::list<InputLayout>& listUnformInputLayouts() const;
+        /// @brief The collection of layouts of uniform inputs.
+        /// @return The reference to `_listUnformInputLayouts`.
+        ::std::list<InputLayout>& listUnformInputLayouts();
+
         /// @brief Calculate and return the stride.
         /// @return The stride value.
         size_t stride() const;
@@ -193,10 +195,14 @@ namespace celerique {
         ::std::unordered_map<ShaderStage, ShaderProgram> _mapShaderStageToShaderProgram;
         /// @brief The collection of layouts of vertex inputs.
         ::std::list<InputLayout> _listVertexInputLayouts;
+        /// @brief The collection of layouts of uniform inputs.
+        ::std::list<InputLayout> _listUnformInputLayouts;
     };
 
     /// @brief A layout of a particular shader input variable.
     struct InputLayout {
+        /// @brief The binding point of an input. (Default 0).
+        size_t bindingPoint = 0;
         /// @brief An index used to identify a specific input in the shader.
         size_t location;
         /// @brief The byte offset of the input variable within a particular batch of input variables.

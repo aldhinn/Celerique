@@ -56,35 +56,14 @@ void ::celerique::vulkan::internal::GraphicsAPI::clearGraphicsPipelineConfigs() 
     IGraphicsAPI::clearGraphicsPipelineConfigs();
 }
 
-/// @brief Create and allocate a uniform buffer in the GPU. No need to de-allocate the buffer created from this function as the engine shall manage it's lifecycle.
-/// @param bufferSize The size of the buffer in bytes.
-/// @return The unique identifier for the GPU buffer.
-celerique::GpuBufferID celerique::vulkan::internal::GraphicsAPI::createUniformBuffer(size_t bufferSize) {
-    /// @brief The unique identifier for the GPU buffer.
-    GpuBufferID currentId = _nextBufferId;
-
-    // TODO: Implement.
-
-    _nextBufferId++; // Update next ID value.
-    return currentId;
-}
-
-/// @brief Bind the uniform buffer to a graphics pipeline.
-/// @param graphicsPipelineConfigId The identifier of the graphics pipeline configuration.
-/// @param uniformBufferId The identifier of the GPU buffer.
-/// @param binding The binding identifier.
-void celerique::vulkan::internal::GraphicsAPI::bindUniformToPipeline(
-    PipelineConfigID graphicsPipelineConfigId, GpuBufferID uniformBufferId, size_t binding
-) {
-    // TODO: Implement.
-}
-
-/// @brief Copy the data from the CPU to the GPU.
-/// @param ptrBufferSrc The pointer to the data source buffer.
-/// @param dataSrcSize The size of the data to be copied.
-/// @param bufferId The Id of the GPU buffer.
-void celerique::vulkan::internal::GraphicsAPI::copyToGpuBuffer(
-    void* ptrBufferSrc, size_t dataSrcSize, GpuBufferID bufferId
+/// @brief Update the values of the uniform of a graphics pipeline.
+/// @param graphicsPipelineConfigId The unique identifier to the graphics pipeline configuration.
+/// @param bindingPoint The binding point of the uniform.
+/// @param ptrData The pointer to the buffer containing the new data.
+/// @param sizeData The size of the new data to be passed.
+void celerique::vulkan::internal::GraphicsAPI::updateUniform(
+    PipelineConfigID graphicsPipelineConfigId, size_t bindingPoint,
+    void* ptrData, size_t sizeData
 ) {
     // TODO: Implement.
 }

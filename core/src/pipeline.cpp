@@ -116,11 +116,14 @@ _ptrBuffer(other._ptrBuffer) {
 /// @brief Member init constructor.
 /// @param mapStageTypeToShaderProgram The map of shader stages to their corresponding shader programs.
 /// @param listVertexInputLayouts The collection of layouts of vertex inputs.
+/// @param listUnformInputLayouts The collection of layouts of uniform inputs.
 ::celerique::PipelineConfig::PipelineConfig(
     ::std::unordered_map<ShaderStage, ShaderProgram>&& mapShaderStageToShaderProgram,
-    ::std::list<InputLayout>&& listVertexInputLayouts
+    ::std::list<InputLayout>&& listVertexInputLayouts,
+    ::std::list<InputLayout>&& listUnformInputLayouts
 ) : _mapShaderStageToShaderProgram(::std::move(mapShaderStageToShaderProgram)),
-_listVertexInputLayouts(::std::move(listVertexInputLayouts)) {}
+_listVertexInputLayouts(::std::move(listVertexInputLayouts)),
+_listUnformInputLayouts(listUnformInputLayouts) {}
 
 /// @brief A shader program container that contains no shader.
 static ::celerique::ShaderProgram emptyShaderProgram(0, nullptr);
@@ -167,6 +170,18 @@ const ::std::list<::celerique::InputLayout>& celerique::PipelineConfig::listVert
 /// @return The reference to `_listVertexInputLayouts`.
 ::std::list<::celerique::InputLayout>& celerique::PipelineConfig::listVertexInputLayouts() {
     return _listVertexInputLayouts;
+}
+
+/// @brief The collection of layouts of uniform inputs.
+/// @return The const reference to `_listUnformInputLayouts`.
+const ::std::list<::celerique::InputLayout>& celerique::PipelineConfig::listUnformInputLayouts() const {
+    return _listUnformInputLayouts;
+}
+
+/// @brief The collection of layouts of uniform inputs.
+/// @return The reference to `_listUnformInputLayouts`.
+::std::list<::celerique::InputLayout>& celerique::PipelineConfig::listUnformInputLayouts() {
+    return _listUnformInputLayouts;
 }
 
 /// @brief Calculate and return the stride value.

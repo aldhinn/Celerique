@@ -36,21 +36,15 @@ namespace celerique { namespace vulkan { namespace internal {
         /// @brief Clear the collection of graphics pipeline configurations.
         void clearGraphicsPipelineConfigs() override;
 
-        /// @brief Create and allocate a uniform buffer in the GPU. No need to de-allocate the buffer created from this function as the engine shall manage it's lifecycle.
-        /// @param bufferSize The size of the buffer in bytes.
-        /// @return The unique identifier for the GPU buffer.
-        GpuBufferID createUniformBuffer(size_t bufferSize) override;
-        /// @brief Bind the uniform buffer to a graphics pipeline.
-        /// @param graphicsPipelineConfigId The identifier of the graphics pipeline configuration.
-        /// @param uniformBufferId The identifier of the GPU buffer.
-        /// @param binding The binding identifier.
-        void bindUniformToPipeline(PipelineConfigID graphicsPipelineConfigId, GpuBufferID uniformBufferId, size_t binding) override;
-
-        /// @brief Copy the data from the CPU to the GPU.
-        /// @param ptrBufferSrc The pointer to the data source buffer.
-        /// @param dataSrcSize The size of the data to be copied.
-        /// @param bufferId The identifier of the GPU buffer.
-        void copyToGpuBuffer(void* ptrBufferSrc, size_t dataSrcSize, GpuBufferID bufferId) override;
+        /// @brief Update the values of the uniform of a graphics pipeline.
+        /// @param graphicsPipelineConfigId The unique identifier to the graphics pipeline configuration.
+        /// @param bindingPoint The binding point of the uniform.
+        /// @param ptrData The pointer to the buffer containing the new data.
+        /// @param sizeData The size of the new data to be passed.
+        void updateUniform(
+            PipelineConfigID graphicsPipelineConfigId, size_t bindingPoint,
+            void* ptrData, size_t sizeData
+        ) override;
 
         /// @brief Graphics draw call.
         /// @param graphicsPipelineConfigId The identifier for the graphics pipeline configuration to be used for drawing.
