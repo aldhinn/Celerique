@@ -69,7 +69,7 @@ namespace celerique { namespace vulkan { namespace internal {
         void removeWindow(Pointer windowHandle);
         /// @brief Re-create the swapchain of the specified window.
         /// @param windowHandle The handle to the window whose swapchain needs to be recreated.
-        void recreateSwapChain(Pointer windowHandle);
+        void reCreateSwapChain(Pointer windowHandle);
 
     private:
         /// @brief Default constructor. (Private to prevent instantiation).

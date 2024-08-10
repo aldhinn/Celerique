@@ -141,15 +141,15 @@ void ::celerique::x11::internal::Window::onUpdate(::std::shared_ptr<IUpdateData>
             _atomicRecentWindowWidth.store(width, ::std::memory_order_release);
             _atomicRecentWindowHeight.store(height, ::std::memory_order_release);
 
-            ::std::thread recreateSwapChainThread([&]() {
+            ::std::thread reCreateSwapChainThread([&]() {
                 /// @brief The retrieved shared pointer of this window's graphics API interface.
                 ::std::shared_ptr<IGraphicsAPI> ptrGraphicsApi = _weakPtrGraphicsApi.lock();
                 // Check if not null before re-creating swapchain.
                 if (ptrGraphicsApi != nullptr) {
-                    ptrGraphicsApi->recreateSwapChain(_windowHandle);
+                    ptrGraphicsApi->reCreateSwapChain(_windowHandle);
                 }
             });
-            recreateSwapChainThread.detach();
+            reCreateSwapChainThread.detach();
         }
     } return;
 

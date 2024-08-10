@@ -79,21 +79,21 @@ namespace celerique {
         /// @brief Clear the collection of graphics pipeline configurations.
         virtual void clearGraphicsPipelineConfigs();
 
-        /// @brief Create and allocate a buffer in the GPU. No need to de-allocate the buffer created from this function as the engine shall manage it's lifecycle.
+        /// @brief Create and allocate a uniform buffer in the GPU. No need to de-allocate the buffer created from this function as the engine shall manage it's lifecycle.
         /// @param bufferSize The size of the buffer in bytes.
         /// @return The unique identifier for the GPU buffer.
-        virtual GpuBufferID createBuffer(size_t bufferSize) = 0;
-        /// @brief Copy the data from the CPU to the GPU.
-        /// @param ptrBufferSrc The pointer to the data source buffer.
-        /// @param dataSrcSize The size of the data to be copied.
-        /// @param bufferId The identifier of the GPU buffer.
-        virtual void copyToGpuBuffer(void* ptrBufferSrc, size_t dataSrcSize, GpuBufferID bufferId) = 0;
-
+        virtual GpuBufferID createUniformBuffer(size_t bufferSize) = 0;
         /// @brief Bind the uniform buffer to a graphics pipeline.
         /// @param graphicsPipelineConfigId The identifier of the graphics pipeline configuration.
         /// @param uniformBufferId The identifier of the GPU buffer.
         /// @param binding The binding identifier.
         virtual void bindUniformToPipeline(PipelineConfigID graphicsPipelineConfigId, GpuBufferID uniformBufferId, size_t binding) = 0;
+
+        /// @brief Copy the data from the CPU to the GPU.
+        /// @param ptrBufferSrc The pointer to the data source buffer.
+        /// @param dataSrcSize The size of the data to be copied.
+        /// @param bufferId The identifier of the GPU buffer.
+        virtual void copyToGpuBuffer(void* ptrBufferSrc, size_t dataSrcSize, GpuBufferID bufferId) = 0;
 
         /// @brief Graphics draw call.
         /// @param graphicsPipelineConfigId The identifier for the graphics pipeline configuration to be used for drawing.
@@ -116,7 +116,7 @@ namespace celerique {
         virtual void removeWindow(Pointer windowHandle) = 0;
         /// @brief Re-create the swapchain of the specified window.
         /// @param windowHandle The handle to the window of which swapchain to re-create.
-        virtual void recreateSwapChain(Pointer windowHandle) = 0;
+        virtual void reCreateSwapChain(Pointer windowHandle) = 0;
 
     // Protected member variables.
     protected:

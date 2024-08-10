@@ -502,7 +502,7 @@ void celerique::vulkan::internal::Manager::removeWindow(Pointer windowHandle) {
 
 /// @brief Re-create the swapchain of the specified window.
 /// @param windowHandle The handle to the window whose swapchain needs to be recreated.
-void celerique::vulkan::internal::Manager::recreateSwapChain(Pointer windowHandle) {
+void celerique::vulkan::internal::Manager::reCreateSwapChain(Pointer windowHandle) {
     ::std::unique_lock<::std::shared_mutex> writeLock(_sharedMutex);
 
     /// @brief The graphics logical device assigned to the window.

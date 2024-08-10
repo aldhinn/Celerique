@@ -40,8 +40,7 @@ License: Mozilla Public License 2.0. (See ./LICENSE).
     /// @brief The current id of the pipeline config ID to be mapped.
     PipelineConfigID currentId = _nextGraphicsPipelineConfigId;
     refManager.addGraphicsPipeline(&graphicsPipelineConfig, currentId);
-    // Update next ID value.
-    _nextGraphicsPipelineConfigId++;
+    _nextGraphicsPipelineConfigId++; // Update next ID value.
     return currentId;
 }
 
@@ -57,28 +56,17 @@ void ::celerique::vulkan::internal::GraphicsAPI::clearGraphicsPipelineConfigs() 
     IGraphicsAPI::clearGraphicsPipelineConfigs();
 }
 
-/// @brief Create and allocate a buffer in the GPU. No need to de-allocate the buffer created from this function as the engine shall manage it's lifecycle.
+/// @brief Create and allocate a uniform buffer in the GPU. No need to de-allocate the buffer created from this function as the engine shall manage it's lifecycle.
 /// @param bufferSize The size of the buffer in bytes.
 /// @return The unique identifier for the GPU buffer.
-celerique::GpuBufferID celerique::vulkan::internal::GraphicsAPI::createBuffer(size_t bufferSize) {
+celerique::GpuBufferID celerique::vulkan::internal::GraphicsAPI::createUniformBuffer(size_t bufferSize) {
     /// @brief The unique identifier for the GPU buffer.
-    PipelineConfigID currentId = _nextGraphicsPipelineConfigId;
+    GpuBufferID currentId = _nextBufferId;
 
     // TODO: Implement.
 
-    // Update next ID value.
-    _nextBufferId++;
+    _nextBufferId++; // Update next ID value.
     return currentId;
-}
-
-/// @brief Copy the data from the CPU to the GPU.
-/// @param ptrBufferSrc The pointer to the data source buffer.
-/// @param dataSrcSize The size of the data to be copied.
-/// @param bufferId The Id of the GPU buffer.
-void celerique::vulkan::internal::GraphicsAPI::copyToGpuBuffer(
-    void* ptrBufferSrc, size_t dataSrcSize, GpuBufferID bufferId
-) {
-    // TODO: Implement.
 }
 
 /// @brief Bind the uniform buffer to a graphics pipeline.
@@ -87,6 +75,16 @@ void celerique::vulkan::internal::GraphicsAPI::copyToGpuBuffer(
 /// @param binding The binding identifier.
 void celerique::vulkan::internal::GraphicsAPI::bindUniformToPipeline(
     PipelineConfigID graphicsPipelineConfigId, GpuBufferID uniformBufferId, size_t binding
+) {
+    // TODO: Implement.
+}
+
+/// @brief Copy the data from the CPU to the GPU.
+/// @param ptrBufferSrc The pointer to the data source buffer.
+/// @param dataSrcSize The size of the data to be copied.
+/// @param bufferId The Id of the GPU buffer.
+void celerique::vulkan::internal::GraphicsAPI::copyToGpuBuffer(
+    void* ptrBufferSrc, size_t dataSrcSize, GpuBufferID bufferId
 ) {
     // TODO: Implement.
 }
@@ -120,8 +118,8 @@ void ::celerique::vulkan::internal::GraphicsAPI::removeWindow(Pointer windowHand
 
 /// @brief Re-create the swapchain of the specified window.
 /// @param windowHandle The handle to the window of which swapchain to re-create.
-void ::celerique::vulkan::internal::GraphicsAPI::recreateSwapChain(Pointer windowHandle) {
-    refManager.recreateSwapChain(windowHandle);
+void ::celerique::vulkan::internal::GraphicsAPI::reCreateSwapChain(Pointer windowHandle) {
+    refManager.reCreateSwapChain(windowHandle);
 }
 
 /// @brief The shared pointer to the singleton instance.
