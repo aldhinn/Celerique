@@ -34,7 +34,7 @@ License: Mozilla Public License 2.0. (See ./LICENSE).
 #endif
 
 #if !defined(CELERIQUE_FOR_WEB_ASSEMBLY)
-#include <celerique/vulkan/graphics.h>
+#include <celerique/vulkan/api.h>
 #endif
 
 // Begin C++ Only Region.

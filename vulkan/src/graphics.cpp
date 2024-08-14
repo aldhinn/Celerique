@@ -8,7 +8,7 @@ License: Mozilla Public License 2.0. (See ./LICENSE).
 
 */
 
-#include <celerique/vulkan/graphics.h>
+#include <celerique/vulkan/api.h>
 #include <celerique/vulkan/internal/graphics.h>
 
 #include <celerique/logging.h>

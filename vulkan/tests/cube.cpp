@@ -9,7 +9,7 @@ License: Mozilla Public License 2.0. (See ./LICENSE).
 */
 
 #include <celerique.h>
-#include <celerique/vulkan/graphics.h>
+#include <celerique/vulkan/api.h>
 
 #include <utility>
 #include <shared_mutex>

@@ -2,13 +2,13 @@
 
 File: ./vulkan/tests/api.gtest.cpp
 Author: Aldhinn Espinas
-Description: This tests the vulkan graphics api implementations.
+Description: This tests the vulkan api implementations.
 
 License: Mozilla Public License 2.0. (See ./LICENSE).
 
 */
 
-#include <celerique/vulkan/graphics.h>
+#include <celerique/vulkan/api.h>
 #include <celerique/vulkan/internal/graphics.h>
 #include <celerique/logging.h>
 

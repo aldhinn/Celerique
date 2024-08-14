@@ -1,15 +1,15 @@
 /*
 
-File: ./include/celerique/vulkan/graphics.h
+File: ./include/celerique/vulkan/api.h
 Author: Aldhinn Espinas
-Description: This header file contains interfaces to vulkan graphics related objects.
+Description: This header file contains interfaces to vulkan API related objects.
 
 License: Mozilla Public License 2.0. (See ./LICENSE).
 
 */
 
-#if !defined(CELERIQUE_VULKAN_GRAPHICS_HEADER_FILE)
-#define CELERIQUE_VULKAN_GRAPHICS_HEADER_FILE
+#if !defined(CELERIQUE_VULKAN_API_HEADER_FILE)
+#define CELERIQUE_VULKAN_API_HEADER_FILE
 
 #include <celerique/defines.h>
 #include <celerique/graphics.h>
