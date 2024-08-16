@@ -67,7 +67,7 @@ namespace celerique {
     };
 
     /// @brief The interface to the specific graphics API.
-    class IGraphicsAPI {
+    class IGraphicsAPI : public virtual IGpuResources {
     public:
         /// @brief Add a graphics pipeline configuration.
         /// @param graphicsPipelineConfig The graphics pipeline configuration.

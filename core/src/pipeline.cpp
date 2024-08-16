@@ -215,3 +215,11 @@ size_t celerique::PipelineConfig::stride() const {
 
     return stride;
 }
+
+/// @brief Clear and free all GPU buffers.
+void celerique::IGpuResources::clearBuffers() {
+    _nextBufferId = 1;
+}
+
+/// @brief Pure virtual destructor.
+::celerique::IGpuResources::~IGpuResources() {}

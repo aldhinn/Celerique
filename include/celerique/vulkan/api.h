@@ -22,6 +22,9 @@ namespace celerique { namespace vulkan {
     /// @brief Gets the interface to the vulkan graphics API.
     /// @return The shared pointer to the vulkan graphics API interface.
     CELERIQUE_SHARED_SYMBOL ::std::shared_ptr<IGraphicsAPI> getGraphicsApiInterface();
+    /// @brief Gets the interface to the vulkan resources functionalities.
+    /// @return The shared pointer to the vulkan resources interface.
+    CELERIQUE_SHARED_SYMBOL ::std::shared_ptr<IGpuResources> getGpuResourcesInterface();
 }}
 #endif
 // End C++ Only Region.

@@ -22,6 +22,12 @@ License: Mozilla Public License 2.0. (See ./LICENSE).
     return ::celerique::vulkan::internal::GraphicsAPI::get();
 }
 
+/// @brief Gets the interface to the vulkan resources functionalities.
+/// @return The shared pointer to the vulkan resources interface.
+::std::shared_ptr<::celerique::IGpuResources> celerique::vulkan::getGpuResourcesInterface() {
+    return ::celerique::vulkan::internal::GraphicsAPI::get();
+}
+
 /// @brief Gets the singleton instance.
 /// @return The singleton instance shared pointer.
 ::std::shared_ptr<::celerique::vulkan::internal::GraphicsAPI> celerique::vulkan::internal::GraphicsAPI::get() {
@@ -105,7 +111,7 @@ void ::celerique::vulkan::internal::GraphicsAPI::reCreateSwapChain(Pointer windo
 ::std::shared_ptr<::celerique::vulkan::internal::GraphicsAPI> celerique::vulkan::internal::GraphicsAPI::_ptrInst = nullptr;
 
 /// @brief Default constructor.
-::celerique::vulkan::internal::GraphicsAPI::GraphicsAPI() : refManager(Manager::getRef()) {
+::celerique::vulkan::internal::GraphicsAPI::GraphicsAPI() {
     if (_ptrInst != nullptr) {
         const char* errorMessage = "There was an unauthorized graphics API interface instance.";
         celeriqueLogFatal(errorMessage);

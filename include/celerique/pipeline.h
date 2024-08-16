@@ -61,8 +61,24 @@ typedef uint8_t CeleriquePipelineInputType;
 /// @brief Boolean pipeline input type.
 #define CELERIQUE_PIPELINE_INPUT_TYPE_BOOLEAN                                               0x04
 
+/// @brief The type of the GPU buffer usage flag bit.
+typedef uint8_t CeleriqueGpuBufferUsage;
+/// @brief Null value for `CeleriqueGpuBufferUsage` type.
+#define CELERIQUE_GPU_BUFFER_USAGE_NULL                                                     0x00
+/// @brief Using the GPU buffer as a vertex buffer.
+#define CELERIQUE_GPU_BUFFER_USAGE_VERTEX                                                   CELERIQUE_LEFT_BIT_SHIFT_1(0)
+/// @brief Using the GPU buffer as an index buffer.
+#define CELERIQUE_GPU_BUFFER_USAGE_INDEX                                                    CELERIQUE_LEFT_BIT_SHIFT_1(1)
+/// @brief Using the GPU buffer as a uniform buffer.
+#define CELERIQUE_GPU_BUFFER_USAGE_UNIFORM                                                  CELERIQUE_LEFT_BIT_SHIFT_1(2)
+
 /// @brief The type of the pipeline configuration unique identifier.
 typedef uintptr_t CeleriquePipelineConfigID;
+
+/// @brief The type of the GPU buffer unique identifier.
+typedef uintptr_t CeleriqueGpuBufferID;
+/// @brief Null value for `CeleriqueGpuBufferID`.
+#define CELERIQUE_GPU_BUFFER_ID_NULL                                                        0x00
 
 // Begin C++ Only Region.
 #if defined(__cplusplus)
@@ -81,11 +97,17 @@ namespace celerique {
     typedef CeleriqueByte Byte;
     /// @brief The type of a particular pipeline input variable.
     typedef CeleriquePipelineInputType PipelineInputType;
+    /// @brief The type of the GPU buffer unique identifier.
+    typedef CeleriqueGpuBufferID GpuBufferID;
+    /// @brief The type of the GPU buffer usage flag bit.
+    typedef CeleriqueGpuBufferUsage GpuBufferUsage;
 
     /// @brief The container to a loaded shader program.
     class ShaderProgram;
     /// @brief A layout of a particular shader input variable.
     struct InputLayout;
+    /// @brief The interface to the GPU resources and functionalities.
+    class IGpuResources;
 
     /// @brief Load a shader program from the file path of the binary specified.
     /// @param binaryPath The file path of the binary where the shader is to be loaded from.
@@ -213,6 +235,37 @@ namespace celerique {
         PipelineInputType inputType;
         /// @brief The name of the variable.
         const char* name = "";
+        /// @brief The unique identifier to this input's GPU memory.
+        GpuBufferID bufferId = CELERIQUE_GPU_BUFFER_ID_NULL;
+    };
+
+    /// @brief The interface to the GPU resources and functionalities.
+    class IGpuResources {
+    public:
+        /// @brief Create a buffer of memory in the GPU.
+        /// @param size The size of the memory to create & allocate.
+        /// @param usageFlagBits The usage of the buffer.
+        /// @return The unique identifier of the GPU buffer.
+        virtual GpuBufferID createBuffer(size_t size, GpuBufferUsage usageFlagBits) = 0;
+        /// @brief Copy data from the CPU to the GPU buffer. This erases the existing data currently on the GPU buffer.
+        /// @param bufferId The unique identifier of the GPU buffer.
+        /// @param ptrDataSrc The pointer to where the data to be copied to the GPU resides.
+        /// @param dataSize The size of the data to be copied.
+        virtual void copyToBuffer(GpuBufferID bufferId, void* ptrDataSrc, size_t dataSize) = 0;
+        /// @brief Free the specified GPU buffer.
+        /// @param bufferId The unique identifier of the GPU buffer.
+        virtual void freeBuffer(GpuBufferID bufferId) = 0;
+        /// @brief Clear and free all GPU buffers.
+        virtual void clearBuffers();
+
+    // Protected member variables.
+    protected:
+        /// @brief The value of the next GPU buffer identifier.
+        GpuBufferID _nextBufferId = 1;
+
+    public:
+        /// @brief Pure virtual destructor.
+        virtual ~IGpuResources() = 0;
     };
 }
 #endif

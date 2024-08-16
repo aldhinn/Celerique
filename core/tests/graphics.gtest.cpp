@@ -26,6 +26,9 @@ namespace celerique {
         MOCK_METHOD2(addWindow, void(UiProtocol, Pointer));
         MOCK_METHOD1(removeWindow, void(Pointer));
         MOCK_METHOD1(reCreateSwapChain, void(Pointer));
+        MOCK_METHOD2(createBuffer, GpuBufferID(size_t, GpuBufferUsage));
+        MOCK_METHOD3(copyToBuffer, void(GpuBufferID, void*, size_t));
+        MOCK_METHOD1(freeBuffer, void(GpuBufferID));
     };
     /// @brief A mock implementation of an interface to a graphical user interface window.
     class MockWindow : public IWindow {

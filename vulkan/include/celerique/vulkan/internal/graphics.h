@@ -13,6 +13,7 @@ License: Mozilla Public License 2.0. (See ./LICENSE).
 
 #include <celerique/graphics.h>
 #include <celerique/vulkan/internal/manager.h>
+#include <celerique/vulkan/internal/resources.h>
 
 // Begin C++ Only Region.
 #if defined(__cplusplus)
@@ -20,7 +21,7 @@ License: Mozilla Public License 2.0. (See ./LICENSE).
 
 namespace celerique { namespace vulkan { namespace internal {
     /// @brief The interface to the vulkan graphics API.
-    class GraphicsAPI final : public IGraphicsAPI {
+    class GraphicsAPI final : public virtual GpuResources, public virtual IGraphicsAPI {
     public:
         /// @brief Gets the singleton instance.
         /// @return The singleton instance shared pointer.
@@ -72,8 +73,6 @@ namespace celerique { namespace vulkan { namespace internal {
     private:
         /// @brief The shared pointer to the singleton instance.
         static ::std::shared_ptr<internal::GraphicsAPI> _ptrInst;
-        /// @brief The reference to the vulkan resource manager.
-        Manager& refManager;
 
     // Constructors.
     public:
