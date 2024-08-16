@@ -32,10 +32,5 @@ void ::celerique::IWindow::useGraphicsApi(::std::shared_ptr<IGraphicsAPI> ptrGra
     }
 }
 
-/// @brief Clear the collection of graphics pipeline configurations.
-void ::celerique::IGraphicsAPI::clearGraphicsPipelineConfigs() {
-    _nextGraphicsPipelineConfigId = 0;
-}
-
 /// @brief Pure virtual destructor.
 ::celerique::IGraphicsAPI::~IGraphicsAPI() {}

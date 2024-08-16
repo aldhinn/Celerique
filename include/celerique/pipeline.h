@@ -256,12 +256,7 @@ namespace celerique {
         /// @param bufferId The unique identifier of the GPU buffer.
         virtual void freeBuffer(GpuBufferID bufferId) = 0;
         /// @brief Clear and free all GPU buffers.
-        virtual void clearBuffers();
-
-    // Protected member variables.
-    protected:
-        /// @brief The value of the next GPU buffer identifier.
-        GpuBufferID _nextBufferId = 1;
+        virtual void clearBuffers() = 0;
 
     public:
         /// @brief Pure virtual destructor.

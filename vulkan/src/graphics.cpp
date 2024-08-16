@@ -43,11 +43,8 @@ License: Mozilla Public License 2.0. (See ./LICENSE).
 ::celerique::PipelineConfigID celerique::vulkan::internal::GraphicsAPI::addGraphicsPipelineConfig(
     PipelineConfig&& graphicsPipelineConfig
 ) {
-    /// @brief The current id of the pipeline config ID to be mapped.
-    PipelineConfigID currentId = _nextGraphicsPipelineConfigId;
-    refManager.addGraphicsPipeline(&graphicsPipelineConfig, currentId);
-    _nextGraphicsPipelineConfigId++; // Update next ID value.
-    return currentId;
+    refManager.addGraphicsPipeline(&graphicsPipelineConfig, 0);
+    return 0;
 }
 
 /// @brief Remove the graphics pipeline configuration specified.
@@ -59,7 +56,6 @@ void ::celerique::vulkan::internal::GraphicsAPI::removeGraphicsPipelineConfig(Pi
 /// @brief Clear the collection of graphics pipeline configurations.
 void ::celerique::vulkan::internal::GraphicsAPI::clearGraphicsPipelineConfigs() {
     refManager.clearGraphicsPipelines();
-    IGraphicsAPI::clearGraphicsPipelineConfigs();
 }
 
 /// @brief Update the values of the uniform of a graphics pipeline.

@@ -47,6 +47,7 @@ namespace celerique { namespace vulkan {
     public:
         MOCK_METHOD1(addGraphicsPipelineConfig, PipelineConfigID(PipelineConfig&&));
         MOCK_METHOD1(removeGraphicsPipelineConfig, void(PipelineConfigID));
+        MOCK_METHOD0(clearGraphicsPipelineConfigs, void());
         MOCK_METHOD4(updateUniform, void(PipelineConfigID, size_t, void*, size_t));
         MOCK_METHOD6(draw, void(PipelineConfigID, size_t, size_t, size_t, void*, uint32_t*));
         MOCK_METHOD2(addWindow, void(UiProtocol, Pointer));
@@ -55,6 +56,7 @@ namespace celerique { namespace vulkan {
         MOCK_METHOD2(createBuffer, GpuBufferID(size_t, GpuBufferUsage));
         MOCK_METHOD3(copyToBuffer, void(GpuBufferID, void*, size_t));
         MOCK_METHOD1(freeBuffer, void(GpuBufferID));
+        MOCK_METHOD0(clearBuffers, void());
 
         MockGraphicsAPI() {
             EXPECT_CALL(*this, addWindow).WillRepeatedly(::testing::Return());

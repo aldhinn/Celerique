@@ -18,10 +18,8 @@ License: Mozilla Public License 2.0. (See ./LICENSE).
 ::celerique::GpuBufferID celerique::vulkan::internal::GpuResources::createBuffer(
     size_t size, GpuBufferUsage usageFlagBits
 ) {
-    /// @brief The current id of the GPU buffer to be mapped.
-    GpuBufferID currentId = _nextBufferId;
     // TODO: Implement.
-    return currentId;
+    return 0;
 }
 
 /// @brief Copy data from the CPU to the GPU buffer.
@@ -43,7 +41,6 @@ void celerique::vulkan::internal::GpuResources::freeBuffer(GpuBufferID bufferId)
 /// @brief Clear and free all GPU buffers.
 void celerique::vulkan::internal::GpuResources::clearBuffers() {
     // TODO: Implement.
-    IGpuResources::clearBuffers();
 }
 
 /// @brief Default constructor. Protected to prevent instantiation.

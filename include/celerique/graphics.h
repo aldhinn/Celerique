@@ -77,7 +77,7 @@ namespace celerique {
         /// @param graphicsPipelineConfigId The identifier of the graphics pipeline configuration to be removed.
         virtual void removeGraphicsPipelineConfig(PipelineConfigID graphicsPipelineConfigId) = 0;
         /// @brief Clear the collection of graphics pipeline configurations.
-        virtual void clearGraphicsPipelineConfigs();
+        virtual void clearGraphicsPipelineConfigs() = 0;
 
         /// @brief Update the values of the uniform of a graphics pipeline.
         /// @param graphicsPipelineConfigId The unique identifier to the graphics pipeline configuration.
@@ -111,11 +111,6 @@ namespace celerique {
         /// @brief Re-create the swapchain of the specified window.
         /// @param windowHandle The handle to the window of which swapchain to re-create.
         virtual void reCreateSwapChain(Pointer windowHandle) = 0;
-
-    // Protected member variables.
-    protected:
-        /// @brief The value of the next graphics pipeline config identifier value.
-        PipelineConfigID _nextGraphicsPipelineConfigId = 0;
 
     public:
         /// @brief Pure virtual destructor.
