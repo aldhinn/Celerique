@@ -12,3 +12,10 @@ else()
     set(CMAKE_CXX_STANDARD 17)
     set(CMAKE_CXX_EXTENSIONS OFF)
 endif()
+
+# Runtime library.
+if (MSVC)
+    set(CMAKE_MSVC_RUNTIME_LIBRARY MultiThreaded$<$<CONFIG:Debug>:Debug>)
+elseif(MINGW)
+    add_link_options(-static -static-libgcc -static-libstdc++ -pthread)
+endif()
