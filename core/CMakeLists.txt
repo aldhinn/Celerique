@@ -34,16 +34,14 @@ if (NOT TARGET CeleriqueEngineCore)
     )
     if (BuildCeleriqueEngineCoreUnitTestingCpp OR PROJECT_IS_TOP_LEVEL)
         enable_testing()
-        find_package(GTest QUIET)
 
-        if (NOT GTest_FOUND)
-            FetchContent_Declare(
-                googletest
-                GIT_REPOSITORY      https://github.com/google/googletest.git
-                GIT_TAG             v1.14.0
-            )
-            FetchContent_MakeAvailable(googletest)
-        endif()
+        FetchContent_Declare(
+            googletest
+            GIT_REPOSITORY      https://github.com/google/googletest.git
+            GIT_TAG             v1.15.2
+        )
+        FetchContent_MakeAvailable(googletest)
+        include(GoogleTest)
 
         # Core Unit Testing CMake Target configurations.
         file(GLOB_RECURSE CeleriqueEngineCoreUnitTestingCppSrc
@@ -71,66 +69,31 @@ if (NOT TARGET CeleriqueEngineCore)
     )
     if (BuildCeleriqueEngineCoreUnitTestingC OR PROJECT_IS_TOP_LEVEL)
         enable_testing()
-        find_package(CMocka QUIET)
 
-        if (NOT CMocka_FOUND)
-            set(WITH_STATIC_LIB ON)
-            set(UNIT_TESTING OFF)
-            set(WITH_EXAMPLES OFF)
-            FetchContent_Declare(
-                cmocka
-                GIT_REPOSITORY      https://github.com/clibs/cmocka.git
-                GIT_TAG             cmocka-1.1.5
-            )
-            FetchContent_MakeAvailable(cmocka)
-        endif()
+        set(WITH_STATIC_LIB ON)
+        set(UNIT_TESTING OFF)
+        set(WITH_EXAMPLES OFF)
+        FetchContent_Declare(
+            cmocka
+            GIT_REPOSITORY      https://github.com/clibs/cmocka.git
+            GIT_TAG             cmocka-1.1.5
+        )
+        FetchContent_MakeAvailable(cmocka)
 
         add_executable(
             LoggingUnitTestC
             ${CMAKE_CURRENT_SOURCE_DIR}/tests/logging.cmocka.c
         )
-        if (NOT CMocka_FOUND)
-            target_link_libraries(
-                LoggingUnitTestC PUBLIC
-                CeleriqueEngineCore ${CMOCKA_STATIC_LIBRARY}
-            )
-        else()
-            target_link_libraries(
-                LoggingUnitTestC PUBLIC
-                CeleriqueEngineCore cmocka
-            )
-        endif()
-        target_include_directories(
-            LoggingUnitTestC PRIVATE
-            ${cmocka-header_SOURCE_DIR}
-        )
-        add_test(
-            NAME LoggingUnitTestC
-            COMMAND LoggingUnitTestC
-        )
+        target_link_libraries(LoggingUnitTestC PUBLIC CeleriqueEngineCore ${CMOCKA_STATIC_LIBRARY})
+        target_include_directories(LoggingUnitTestC PRIVATE ${cmocka-header_SOURCE_DIR})
+        add_test(NAME LoggingUnitTestC COMMAND LoggingUnitTestC)
 
         add_executable(
             TypeUnitTestC
             ${CMAKE_CURRENT_SOURCE_DIR}/tests/types.cmocka.c
         )
-        if (NOT CMocka_FOUND)
-            target_link_libraries(
-                TypeUnitTestC PUBLIC
-                CeleriqueEngineCore ${CMOCKA_STATIC_LIBRARY}
-            )
-        else()
-            target_link_libraries(
-                TypeUnitTestC PUBLIC
-                CeleriqueEngineCore cmocka
-            )
-        endif()
-        target_include_directories(
-            TypeUnitTestC PRIVATE
-            ${cmocka-header_SOURCE_DIR}
-        )
-        add_test(
-            NAME TypeUnitTestC
-            COMMAND TypeUnitTestC
-        )
+        target_link_libraries(TypeUnitTestC PUBLIC CeleriqueEngineCore ${CMOCKA_STATIC_LIBRARY})
+        target_include_directories(TypeUnitTestC PRIVATE ${cmocka-header_SOURCE_DIR})
+        add_test(NAME TypeUnitTestC COMMAND TypeUnitTestC)
     endif()
 endif()
