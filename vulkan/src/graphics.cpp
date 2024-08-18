@@ -41,10 +41,10 @@ License: Mozilla Public License 2.0. (See ./LICENSE).
 /// @param graphicsPipelineConfig The graphics pipeline configuration.
 /// @return The unique identifier to the graphics pipeline configuration that was just added.
 ::celerique::PipelineConfigID celerique::vulkan::internal::GraphicsAPI::addGraphicsPipelineConfig(
-    PipelineConfig&& graphicsPipelineConfig
+    const PipelineConfig& graphicsPipelineConfig
 ) {
     PipelineConfigID currentId = genPipelineConfigID();
-    refManager.addGraphicsPipeline(&graphicsPipelineConfig, currentId);
+    refManager.addGraphicsPipeline(graphicsPipelineConfig, currentId);
     return currentId;
 }
 

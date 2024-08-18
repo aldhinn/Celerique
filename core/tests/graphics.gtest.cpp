@@ -19,7 +19,7 @@ namespace celerique {
     /// @brief An implementation of an interface to a mock graphics API.
     class MockGraphicsApi : public IGraphicsAPI {
     public:
-        MOCK_METHOD1(addGraphicsPipelineConfig, PipelineConfigID(PipelineConfig&&));
+        MOCK_METHOD1(addGraphicsPipelineConfig, PipelineConfigID(const PipelineConfig&));
         MOCK_METHOD1(removeGraphicsPipelineConfig, void(PipelineConfigID));
         MOCK_METHOD0(clearGraphicsPipelineConfigs, void());
         MOCK_METHOD4(updateUniform, void(PipelineConfigID, size_t, void*, size_t));

@@ -38,10 +38,10 @@ namespace celerique { namespace vulkan { namespace internal {
         static Manager& getRef();
 
         /// @brief Add a graphics pipeline.
-        /// @param ptrGraphicsPipelineConfig The pointer to the graphics pipeline configuration.
+        /// @param graphicsPipelineConfig The graphics pipeline configuration.
         /// @param currentId The current id of the pipeline config ID to be mapped.
         /// @return The unique identifier to the graphics pipeline configuration that was just added.
-        void addGraphicsPipeline(PipelineConfig* ptrGraphicsPipelineConfig, PipelineConfigID currentId);
+        void addGraphicsPipeline(const PipelineConfig& graphicsPipelineConfig, PipelineConfigID currentId);
         /// @brief Remove the graphics pipeline specified.
         /// @param graphicsPipelineConfigId The identifier of the graphics pipeline configuration to be removed.
         void removeGraphicsPipeline(PipelineConfigID graphicsPipelineConfigId);
@@ -200,16 +200,16 @@ namespace celerique { namespace vulkan { namespace internal {
     private:
         /// @brief Construct a collection shader stage create information structures.
         /// @param logicalDevice The handle to the logical device that is used to create the pipeline.
-        /// @param ptrPipelineConfig The pointer to the pipeline configuration.
+        /// @param pipelineConfig The pipeline configuration.
         /// @return The collection of vulkan pipeline shader stages.
         ::std::vector<VkPipelineShaderStageCreateInfo> constructVecShaderStageCreateInfos(
-            VkDevice logicalDevice, PipelineConfig* ptrPipelineConfig
+            VkDevice logicalDevice, const PipelineConfig& pipelineConfig
         );
         /// @brief Construct a collection of vertex attribute descriptions.
-        /// @param ptrPipelineConfig The pointer to the pipeline configuration.
+        /// @param pipelineConfig The pipeline configuration.
         /// @return The collection of vertex attribute descriptions.
         ::std::vector<VkVertexInputAttributeDescription> constructVecVertexAttributeDescriptions(
-            PipelineConfig* ptrPipelineConfig
+            const PipelineConfig& pipelineConfig
         );
 
     // Memory helper functions.

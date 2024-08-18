@@ -51,11 +51,11 @@ celerique::vulkan::internal::Manager& celerique::vulkan::internal::Manager::getR
 }
 
 /// @brief Add a graphics pipeline.
-/// @param ptrGraphicsPipelineConfig The pointer to the graphics pipeline configuration.
+/// @param graphicsPipelineConfig The graphics pipeline configuration.
 /// @param currentId The current id of the pipeline config ID to be mapped.
 /// @return The unique identifier to the graphics pipeline configuration that was just added.
 void ::celerique::vulkan::internal::Manager::addGraphicsPipeline(
-    PipelineConfig* ptrGraphicsPipelineConfig, PipelineConfigID currentId
+    const PipelineConfig& graphicsPipelineConfig, PipelineConfigID currentId
 ) {
     ::std::unique_lock<::std::shared_mutex> writeLock(_sharedMutex);
 
@@ -78,19 +78,19 @@ void ::celerique::vulkan::internal::Manager::addGraphicsPipeline(
     /// @brief The description of the vertex input binding.
     VkVertexInputBindingDescription vertexBindingDescription = {};
     vertexBindingDescription.binding = 0;
-    vertexBindingDescription.stride = ptrGraphicsPipelineConfig->stride();
+    vertexBindingDescription.stride = graphicsPipelineConfig.stride();
     vertexBindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 
     /// @brief The collection of vertex attribute descriptions.
     ::std::vector<VkVertexInputAttributeDescription> vecVertexAttributeDescriptions = constructVecVertexAttributeDescriptions(
-        ptrGraphicsPipelineConfig
+        graphicsPipelineConfig
     );
 
     /// @brief Information about how the input buffer layout.
     VkPipelineVertexInputStateCreateInfo vertexInputStateInfo = {};
     vertexInputStateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
     // Assign only if there are vertex input layout specified in the pipeline configuration.
-    if (!ptrGraphicsPipelineConfig->listVertexInputLayouts().empty()) {
+    if (!graphicsPipelineConfig.listVertexInputLayouts().empty()) {
         vertexInputStateInfo.vertexBindingDescriptionCount = 1;
         vertexInputStateInfo.pVertexBindingDescriptions = &vertexBindingDescription;
         vertexInputStateInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(vecVertexAttributeDescriptions.size());
@@ -106,7 +106,7 @@ void ::celerique::vulkan::internal::Manager::addGraphicsPipeline(
 
     /// @brief The collection of vulkan pipeline shader stages.
     ::std::vector<VkPipelineShaderStageCreateInfo> vecShaderStageCreateInfos = constructVecShaderStageCreateInfos(
-        graphicsLogicalDevice, ptrGraphicsPipelineConfig
+        graphicsLogicalDevice, graphicsPipelineConfig
     );
     /// @brief The list of shader modules associated with the graphics pipeline configuration identifier.
     ::std::list<VkShaderModule> listShaderModules;
@@ -2087,16 +2087,16 @@ void celerique::vulkan::internal::Manager::fillMeshBuffer(
 
 /// @brief Construct a collection shader stage create information structures.
 /// @param logicalDevice The handle to the logical device that is used to create the pipeline.
-/// @param ptrPipelineConfig The pointer to the pipeline configuration.
+/// @param pipelineConfig The pipeline configuration.
 /// @return The collection of vulkan pipeline shader stages.
 ::std::vector<VkPipelineShaderStageCreateInfo> celerique::vulkan::internal::Manager::constructVecShaderStageCreateInfos(
-    VkDevice logicalDevice, PipelineConfig* ptrPipelineConfig
+    VkDevice logicalDevice, const PipelineConfig& pipelineConfig
 ) {
     /// @brief The container for the result code from the vulkan api.
     VkResult result;
 
     /// @brief The collection of shader stages.
-    ::std::list<ShaderStage> listShaderStages = ptrPipelineConfig->listStages();
+    ::std::list<ShaderStage> listShaderStages = pipelineConfig.listStages();
     /// @brief The collection of vulkan pipeline shader stages.
     ::std::vector<VkPipelineShaderStageCreateInfo> vecShaderStageCreateInfos;
     vecShaderStageCreateInfos.reserve(listShaderStages.size());
@@ -2104,7 +2104,7 @@ void celerique::vulkan::internal::Manager::fillMeshBuffer(
     // Iterating over shader stages.
     for (ShaderStage shaderStage : listShaderStages) {
         /// @brief The const reference to the shader program of the specified shader stage.
-        const ShaderProgram& refShaderProgram = ptrPipelineConfig->shaderProgram(shaderStage);
+        const ShaderProgram& refShaderProgram = pipelineConfig.shaderProgram(shaderStage);
         /// @brief The information about the shader module.
         VkShaderModuleCreateInfo shaderModuleInfo = {};
         shaderModuleInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
@@ -2159,13 +2159,13 @@ void celerique::vulkan::internal::Manager::fillMeshBuffer(
 }
 
 /// @brief Construct a collection of vertex attribute descriptions.
-/// @param ptrPipelineConfig The pointer to the pipeline configuration.
+/// @param pipelineConfig The pipeline configuration.
 /// @return The collection of vertex attribute descriptions.
 ::std::vector<VkVertexInputAttributeDescription> celerique::vulkan::internal::Manager::constructVecVertexAttributeDescriptions(
-    PipelineConfig* ptrPipelineConfig
+    const PipelineConfig& pipelineConfig
 ) {
     /// @brief The collection of input layouts.
-    const ::std::list<InputLayout>& listInputLayouts = ptrPipelineConfig->listVertexInputLayouts();
+    const ::std::list<InputLayout>& listInputLayouts = pipelineConfig.listVertexInputLayouts();
     /// @brief The collection of vertex attribute descriptions.
     ::std::vector<VkVertexInputAttributeDescription> vecVertexAttributeDescriptions;
     vecVertexAttributeDescriptions.reserve(listInputLayouts.size());

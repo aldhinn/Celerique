@@ -72,7 +72,7 @@ namespace celerique {
         /// @brief Add a graphics pipeline configuration.
         /// @param graphicsPipelineConfig The graphics pipeline configuration.
         /// @return The unique identifier to the graphics pipeline configuration that was just added.
-        virtual PipelineConfigID addGraphicsPipelineConfig(PipelineConfig&& graphicsPipelineConfig) = 0;
+        virtual PipelineConfigID addGraphicsPipelineConfig(const PipelineConfig& graphicsPipelineConfig) = 0;
         /// @brief Remove the graphics pipeline configuration specified.
         /// @param graphicsPipelineConfigId The identifier of the graphics pipeline configuration to be removed.
         virtual void removeGraphicsPipelineConfig(PipelineConfigID graphicsPipelineConfigId) = 0;
