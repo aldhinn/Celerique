@@ -43,8 +43,9 @@ License: Mozilla Public License 2.0. (See ./LICENSE).
 ::celerique::PipelineConfigID celerique::vulkan::internal::GraphicsAPI::addGraphicsPipelineConfig(
     PipelineConfig&& graphicsPipelineConfig
 ) {
-    refManager.addGraphicsPipeline(&graphicsPipelineConfig, 0);
-    return 0;
+    PipelineConfigID currentId = genPipelineConfigID();
+    refManager.addGraphicsPipeline(&graphicsPipelineConfig, currentId);
+    return currentId;
 }
 
 /// @brief Remove the graphics pipeline configuration specified.

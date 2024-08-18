@@ -74,6 +74,8 @@ typedef uint8_t CeleriqueGpuBufferUsage;
 
 /// @brief The type of the pipeline configuration unique identifier.
 typedef uintptr_t CeleriquePipelineConfigID;
+/// @brief Null value for `CeleriquePipelineConfigID`.
+#define CELERIQUE_PIPELINE_CONFIG_ID_NULL                                                   0x00
 
 /// @brief The type of the GPU buffer unique identifier.
 typedef uintptr_t CeleriqueGpuBufferID;
@@ -262,6 +264,13 @@ namespace celerique {
         /// @brief Pure virtual destructor.
         virtual ~IGpuResources() = 0;
     };
+
+    /// @brief Generate an engine-wide unique pipeline configuration identifier.
+    /// @return The generated `PipelineConfigID`.
+    CELERIQUE_SHARED_SYMBOL PipelineConfigID genPipelineConfigID();
+    /// @brief Generate an engine-wide unique GPU buffer identifier.
+    /// @return The generated `GpuBufferID`.
+    CELERIQUE_SHARED_SYMBOL GpuBufferID genGpuBufferId();
 }
 #endif
 // End C++ Only Region

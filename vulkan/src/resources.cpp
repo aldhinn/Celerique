@@ -18,8 +18,9 @@ License: Mozilla Public License 2.0. (See ./LICENSE).
 ::celerique::GpuBufferID celerique::vulkan::internal::GpuResources::createBuffer(
     size_t size, GpuBufferUsage usageFlagBits
 ) {
+    GpuBufferID currentId = genGpuBufferId();
     // TODO: Implement.
-    return 0;
+    return currentId;
 }
 
 /// @brief Copy data from the CPU to the GPU buffer.

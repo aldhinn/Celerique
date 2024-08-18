@@ -12,6 +12,7 @@ License: Mozilla Public License 2.0. (See ./LICENSE).
 #include <celerique/logging.h>
 
 #include <fstream>
+#include <mutex>
 
 /// @brief Load a shader program from the file path of the binary specified.
 /// @param binaryPath The file path of the binary where the shader is to be loaded from.
@@ -218,3 +219,25 @@ size_t celerique::PipelineConfig::stride() const {
 
 /// @brief Pure virtual destructor.
 ::celerique::IGpuResources::~IGpuResources() {}
+
+/// @brief The next value of `PipelineConfigID` to be generated.
+static ::celerique::PipelineConfigID nextPipelineConfigId = 0;
+/// @brief The mutex object restricting access to `nextPipelineConfigId`.
+static ::std::mutex nextPipelineConfigIdMutex;
+/// @brief Generate an engine-wide unique pipeline configuration identifier.
+/// @return The generated `PipelineConfigID`.
+::celerique::PipelineConfigID celerique::genPipelineConfigID() {
+    ::std::lock_guard<::std::mutex> writeLock(nextPipelineConfigIdMutex);
+    return ++nextPipelineConfigId;
+}
+
+/// @brief The next value of `GpuBufferID` to be generated.
+static ::celerique::GpuBufferID nextGpuBufferId = 0;
+/// @brief The mutex object restricting access to `nextGpuBufferId`.
+static ::std::mutex nextGpuBufferIdMutex;
+/// @brief Generate an engine-wide unique GPU buffer identifier.
+/// @return The generated `GpuBufferID`.
+::celerique::GpuBufferID celerique::genGpuBufferId() {
+    ::std::lock_guard<::std::mutex> writeLock(nextGpuBufferIdMutex);
+    return ++nextGpuBufferId;
+}
