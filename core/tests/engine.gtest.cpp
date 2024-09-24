@@ -19,7 +19,7 @@ namespace celerique {
     class EngineUnitTestCpp : public ::testing::Test {};
 
     /// @brief An interface to a mock graphics user interface window.
-    class MockEngineWindow : public virtual IWindow {
+    class MockEngineWindow : public virtual WindowBase {
     public:
         MOCK_METHOD1(onUpdate, void(::std::shared_ptr<IUpdateData>));
 
@@ -38,7 +38,7 @@ namespace celerique {
         ::std::atomic<bool> _atomicDidUpdate = false;
     };
     /// @brief A mock application layer.
-    class MockApplicationLayer : public virtual IApplicationLayer {
+    class MockApplicationLayer : public virtual ApplicationLayerBase {
     public:
         MOCK_METHOD1(onUpdate, void(::std::shared_ptr<IUpdateData>));
 
@@ -77,7 +77,7 @@ namespace celerique {
 
     TEST_F(EngineUnitTestCpp, windowGetsUpdateWhenEngineUpdates) {
         /// @brief Mock window interface pointer.
-        ::std::unique_ptr<IWindow> ptrWindow = ::std::make_unique<MockEngineWindow>();
+        ::std::unique_ptr<WindowBase> ptrWindow = ::std::make_unique<MockEngineWindow>();
         // Try to extract mock window pointer to be used later.
         MockEngineWindow* ptrMockWindow = dynamic_cast<MockEngineWindow*>(ptrWindow.get());
 
@@ -94,7 +94,7 @@ namespace celerique {
 
     TEST_F(EngineUnitTestCpp, engineAppLoopCycle) {
         /// @brief Mock application layer.
-        ::std::unique_ptr<IApplicationLayer> ptrAppLayer = ::std::make_unique<MockApplicationLayer>();
+        ::std::unique_ptr<ApplicationLayerBase> ptrAppLayer = ::std::make_unique<MockApplicationLayer>();
         // Try to extract mock application layer pointer to be used later.
         MockApplicationLayer* ptrMockAppLayer = dynamic_cast<MockApplicationLayer*>(ptrAppLayer.get());
         addAppLayer(::std::move(ptrAppLayer));

@@ -23,14 +23,14 @@ namespace celerique { namespace event {
     typedef CeleriquePixelUnits PixelUnits;
 
     /// @brief A class of events regarding cursors events like a mouse or a touch event.
-    class Cursor : public virtual Event {
+    class Cursor : public virtual EventBase {
     public:
         /// @brief Pure virtual destructor.
         virtual ~Cursor() = 0;
     };
 
     /// @brief A cursor event pointed at a specific coordinate in the screen.
-    class CursorPointed : public virtual Cursor, public virtual Event {
+    class CursorPointed : public virtual Cursor, public virtual EventBase {
     public:
         /// @brief Init constructor.
         /// @param xPos The horizontal position of the cursor in the screen.
@@ -57,7 +57,7 @@ namespace celerique { namespace event {
     };
 
     /// @brief A cursor event regarding cursor movements in the screen.
-    class CursorMoved : public virtual Cursor, public virtual Event {
+    class CursorMoved : public virtual Cursor, public virtual EventBase {
     public:
         /// @brief Init constructor.
         /// @param deltaX The horizontal component of the offset.

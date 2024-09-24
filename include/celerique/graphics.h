@@ -44,9 +44,9 @@ namespace celerique {
     /// @brief The type for a pointer container.
     typedef CeleriquePointer Pointer;
 
-    /// @brief An interface to a graphical user interface window.
-    class IWindow : public virtual IStateful, public virtual IEventListener,
-    public virtual EventBroadcaster {
+    /// @brief The base abstract class to a graphical user interface window.
+    class WindowBase : public virtual IStateful, public virtual IEventListener,
+    public virtual EventBroadcasterBase {
     public:
         /// @brief Use a particular graphics API for rendering.
         /// @param ptrGraphicsApi 
@@ -63,7 +63,7 @@ namespace celerique {
 
     public:
         /// @brief Virtual destructor.
-        virtual ~IWindow();
+        virtual ~WindowBase();
     };
 
     /// @brief The interface to the specific graphics API.

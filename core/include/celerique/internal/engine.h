@@ -29,13 +29,13 @@ namespace celerique { namespace internal {
         void onUpdate(::std::shared_ptr<IUpdateData> ptrUpdateData = nullptr) override;
         /// @brief The event handler method.
         /// @param ptrEvent The shared pointer to the event being dispatched.
-        void onEvent(::std::shared_ptr<Event> ptrEvent) override;
+        void onEvent(::std::shared_ptr<EventBase> ptrEvent) override;
         /// @brief Add an application layer to be managed by the engine.
         /// @param ptrAppLayer The unique pointer to the application layer instance.
-        void addAppLayer(::std::unique_ptr<IApplicationLayer>&& ptrAppLayer);
+        void addAppLayer(::std::unique_ptr<ApplicationLayerBase>&& ptrAppLayer);
         /// @brief Add a graphical user interface window to be managed by the engine.
         /// @param ptrWindow The unique pointer to the window instance.
-        void addWindow(::std::unique_ptr<IWindow>&& ptrWindow);
+        void addWindow(::std::unique_ptr<WindowBase>&& ptrWindow);
         /// @brief Creates and run the application run loop.
         void run();
 
@@ -46,16 +46,16 @@ namespace celerique { namespace internal {
     private:
         /// @brief The event handler for engine shutdown event.
         /// @param ptrEvent The shared pointer to the event being dispatched.
-        void onEngineShutdown(::std::shared_ptr<Event> ptrEvent);
+        void onEngineShutdown(::std::shared_ptr<EventBase> ptrEvent);
 
     // Private member variables.
     private:
         /// @brief The collection of application layer instances.
-        ::std::list<::std::unique_ptr<IApplicationLayer>> _listPtrAppLayers;
+        ::std::list<::std::unique_ptr<ApplicationLayerBase>> _listPtrAppLayers;
         /// @brief The mutex for `_listPtrAppLayers`.
         ::std::shared_mutex _layerMutex;
         /// @brief The graphical user interface windows managed by the engine.
-        ::std::list<::std::unique_ptr<IWindow>> _listPtrWindows;
+        ::std::list<::std::unique_ptr<WindowBase>> _listPtrWindows;
         /// @brief The mutex for `_listPtrWindows`.
         ::std::shared_mutex _windowsMutex;
         /// @brief The state that indicate if the application loop should keep running.

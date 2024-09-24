@@ -23,7 +23,7 @@ License: Mozilla Public License 2.0. (See ./LICENSE).
 
 namespace celerique { namespace x11 { namespace internal {
     /// @brief Wrapper for an x11 window.
-    class Window final : public virtual IWindow {
+    class Window final : public virtual WindowBase {
     public:
         /// @brief Member init constructor.
         /// @param defaultWidth The default horizontal dimension of the window.

@@ -21,7 +21,7 @@ License: Mozilla Public License 2.0. (See ./LICENSE).
 
 #include <X11/Xatom.h>
 
-::std::unique_ptr<::celerique::IWindow> celerique::x11::createWindow(
+::std::unique_ptr<::celerique::WindowBase> celerique::x11::createWindow(
     ::celerique::x11::PixelUnits defaultWidth,
     ::celerique::x11::PixelUnits defaultHeight,
     ::std::string&& title

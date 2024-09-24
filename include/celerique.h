@@ -45,17 +45,17 @@ namespace celerique {
     /// @brief The container for the engine's update argument data.
     class EngineUpdateData;
     /// @brief The interface for an application layer.
-    class IApplicationLayer;
+    class ApplicationLayerBase;
 
     /// @brief Updates the state of the engine.
     /// @param ptrArg The shared pointer to the update data container.
     CELERIQUE_SHARED_SYMBOL void onUpdate(::std::shared_ptr<EngineUpdateData> ptrUpdateData = nullptr);
     /// @brief Add an application layer to be managed by the engine.
     /// @param ptrAppLayer The unique pointer to the application layer instance.
-    CELERIQUE_SHARED_SYMBOL void addAppLayer(::std::unique_ptr<IApplicationLayer>&& ptrAppLayer);
+    CELERIQUE_SHARED_SYMBOL void addAppLayer(::std::unique_ptr<ApplicationLayerBase>&& ptrAppLayer);
     /// @brief Add a graphical user interface window to be managed by the engine.
     /// @param ptrWindow The unique pointer to the window instance.
-    CELERIQUE_SHARED_SYMBOL void addWindow(::std::unique_ptr<IWindow>&& ptrWindow);
+    CELERIQUE_SHARED_SYMBOL void addWindow(::std::unique_ptr<WindowBase>&& ptrWindow);
     /// @brief Creates and run the application run loop.
     CELERIQUE_SHARED_SYMBOL void run();
 
@@ -77,12 +77,12 @@ namespace celerique {
         ::std::chrono::nanoseconds _elapsedNanoSecs;
     };
 
-    /// @brief The interface for an application layer.
-    class IApplicationLayer : public virtual IStateful, public virtual IEventListener,
-    public virtual EventBroadcaster {
+    /// @brief The base class for an application layer.
+    class ApplicationLayerBase : public virtual IStateful, public virtual IEventListener,
+    public virtual EventBroadcasterBase {
     public:
         /// @brief Pure virtual destructor.
-        virtual ~IApplicationLayer() = 0;
+        virtual ~ApplicationLayerBase() = 0;
     };
 }
 #endif

@@ -64,7 +64,7 @@ namespace celerique { namespace vulkan {
     };
 
     TEST_F(GraphicsApiUnitTestCpp, windowRegistersToAnotherGraphicsApi) {
-        ::std::unique_ptr<IWindow> ptrWindow = createWindow(
+        ::std::unique_ptr<WindowBase> ptrWindow = createWindow(
             700, 300, ""
         );
         ::std::shared_ptr<IGraphicsAPI> vulkanGraphicsApi = getGraphicsApiInterface();
@@ -78,7 +78,7 @@ namespace celerique { namespace vulkan {
     }
 
     TEST_F(GraphicsApiUnitTestCpp, expectedBehaviourWhenCallingTwice) {
-        ::std::unique_ptr<IWindow> ptrWindow = createWindow(
+        ::std::unique_ptr<WindowBase> ptrWindow = createWindow(
             700, 300, ""
         );
         ::std::shared_ptr<IGraphicsAPI> vulkanGraphicsApi = getGraphicsApiInterface();

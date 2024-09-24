@@ -10,7 +10,7 @@ License: Mozilla Public License 2.0. (See ./LICENSE).
 
 #include <celerique/graphics.h>
 
-void ::celerique::IWindow::useGraphicsApi(::std::shared_ptr<IGraphicsAPI> ptrGraphicsApi) {
+void ::celerique::WindowBase::useGraphicsApi(::std::shared_ptr<IGraphicsAPI> ptrGraphicsApi) {
     ::std::shared_ptr<IGraphicsAPI> ptrPrevGraphicsApi = _weakPtrGraphicsApi.lock();
     if (ptrPrevGraphicsApi != nullptr) {
         // Remove this window from the graphics API that this was registered to.
@@ -24,7 +24,7 @@ void ::celerique::IWindow::useGraphicsApi(::std::shared_ptr<IGraphicsAPI> ptrGra
 }
 
 /// @brief Virtual destructor.
-::celerique::IWindow::~IWindow() {
+::celerique::WindowBase::~WindowBase() {
     ::std::shared_ptr<IGraphicsAPI> ptrPrevGraphicsApi = _weakPtrGraphicsApi.lock();
     if (ptrPrevGraphicsApi != nullptr) {
         // Remove this window from a graphics API that this was registered to.

@@ -35,7 +35,7 @@ namespace celerique { namespace event {
     typedef CeleriqueMouseButton MouseButton;
 
     /// @brief A class of events regarding mouse events.
-    class Mouse : public virtual Cursor, public virtual Event {
+    class Mouse : public virtual Cursor, public virtual EventBase {
     public:
         /// @brief Pure virtual destructor.
         virtual ~Mouse() = 0;
@@ -43,7 +43,7 @@ namespace celerique { namespace event {
 
     /// @brief An event type regarding the mouse cursor moving.
     class CELERIQUE_SHARED_SYMBOL MouseMoved final :
-    public virtual CursorMoved, public virtual Event, public virtual Mouse {
+    public virtual CursorMoved, public virtual EventBase, public virtual Mouse {
     public:
         /// @brief Init constructor.
         /// @param deltaX The horizontal component of the offset.
@@ -56,7 +56,7 @@ namespace celerique { namespace event {
 
     /// @brief An event type regarding a mouse button being clicked.
     class CELERIQUE_SHARED_SYMBOL MouseClicked final : public virtual Mouse,
-    public virtual CursorPointed, public virtual Event {
+    public virtual CursorPointed, public virtual EventBase {
     public:
         /// @brief Init constructor.
         /// @param button The mouse button being clicked.
@@ -79,7 +79,7 @@ namespace celerique { namespace event {
 
     /// @brief An event type regarding a mouse button being released.
     class CELERIQUE_SHARED_SYMBOL MouseReleased final : public virtual Mouse,
-    public virtual CursorPointed, public virtual Event {
+    public virtual CursorPointed, public virtual EventBase {
     public:
         /// @brief Init constructor.
         /// @param button The mouse button being released.
@@ -102,7 +102,7 @@ namespace celerique { namespace event {
 
     /// @brief An event type regarding a mouse scroll.
     class CELERIQUE_SHARED_SYMBOL MouseScrolled final : public virtual Mouse,
-    public virtual Event {
+    public virtual EventBase {
     public:
         /// @brief Init constructor.
         /// @param deltaX The horizontal component of the offset.

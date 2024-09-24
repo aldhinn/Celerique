@@ -61,7 +61,7 @@ namespace celerique {
     typedef CeleriqueEventHandlingStrategy EventHandlingStrategy;
 
     /// @brief Base Event type.
-    class Event {
+    class EventBase {
     public:
         /// @brief Determines whether this event should propagate or not.
         /// @return `_shouldPropagate` value.
@@ -85,23 +85,23 @@ namespace celerique {
 
     public:
         /// @brief Pure virtual destructor.
-        virtual ~Event() = 0;
+        virtual ~EventBase() = 0;
     };
 
     /// @brief The type of an event handler.
-    using EventHandler = ::std::function<void(::std::shared_ptr<Event>)>;
+    using EventHandler = ::std::function<void(::std::shared_ptr<EventBase>)>;
 
     /// @brief A template class for an event dispatcher.
     class EventDispatcher final {
     public:
         /// @brief Copy init constructor.
         /// @param ptrEvent The shared pointer to the event to be dispatched.
-        inline EventDispatcher(const ::std::shared_ptr<Event>& ptrEvent) :
+        inline EventDispatcher(const ::std::shared_ptr<EventBase>& ptrEvent) :
         _ptrEvent(ptrEvent) {}
         /// @brief Move init constructor.
         /// @param ptrEvent The shared pointer to the event to be dispatched.
         /// In this case, this dispatcher object will own the event pointer.
-        inline EventDispatcher(::std::shared_ptr<Event>&& ptrEvent) :
+        inline EventDispatcher(::std::shared_ptr<EventBase>&& ptrEvent) :
         _ptrEvent(::std::move(ptrEvent)) {}
 
         /// @brief Dispatch the event to their relevant event handlers.
@@ -114,8 +114,8 @@ namespace celerique {
             EventHandlingStrategy strategy = CELERIQUE_EVENT_HANDLING_STRATEGY_BLOCKING
         ) {
             static_assert(
-                ::std::is_base_of<::celerique::Event, TEvent>::value,
-                "TEvent must be derived from `::celerique::Event`"
+                ::std::is_base_of<::celerique::EventBase, TEvent>::value,
+                "TEvent must be derived from `::celerique::EventBase`"
             );
 
             // Do nothing if event pointer is null.
@@ -124,7 +124,7 @@ namespace celerique {
             // Ensuring that the has the correct type ID if the dispatching
             // to a specific event implementation.
             if (::std::type_index(typeid(TEvent)) != _ptrEvent->typeID() &&
-            !::std::is_same<TEvent, Event>::value) return;
+            !::std::is_same<TEvent, ::celerique::EventBase>::value) return;
 
             switch(strategy) {
             case CELERIQUE_EVENT_HANDLING_STRATEGY_BLOCKING:
@@ -146,7 +146,7 @@ namespace celerique {
 
     private:
         /// @brief The shared pointer to the event to be dispatched.
-        ::std::shared_ptr<Event> _ptrEvent;
+        ::std::shared_ptr<EventBase> _ptrEvent;
     };
 
     /// @brief An interface to an event listener.
@@ -154,7 +154,7 @@ namespace celerique {
     public:
         /// @brief The event handler method.
         /// @param ptrEvent The shared pointer to the event being dispatched.
-        virtual void onEvent(::std::shared_ptr<Event> ptrEvent) {}
+        virtual void onEvent(::std::shared_ptr<EventBase> ptrEvent) {}
 
     public:
         /// @brief Pure virtual destructor.
@@ -162,7 +162,7 @@ namespace celerique {
     };
 
     /// @brief A base type for anything that dispatches events to its listeners.
-    class EventBroadcaster {
+    class EventBroadcasterBase {
     public:
         /// @brief Add an event listener callback to `_vecListeners`.
         /// @param listener The function pointer to the event listener.
@@ -176,7 +176,7 @@ namespace celerique {
         /// @param ptrEvent The pointer to the event to be dispatched.
         /// @param strategy The dispatch strategy (blocking by default.)
         void broadcast(
-            const ::std::shared_ptr<Event>& ptrEvent,
+            const ::std::shared_ptr<EventBase>& ptrEvent,
             EventHandlingStrategy strategy = CELERIQUE_EVENT_HANDLING_STRATEGY_BLOCKING
         );
 
@@ -186,7 +186,7 @@ namespace celerique {
 
     public:
         /// @brief Pure virtual destructor.
-        virtual ~EventBroadcaster() = 0;
+        virtual ~EventBroadcasterBase() = 0;
     };
 }
 #endif
@@ -196,7 +196,7 @@ namespace celerique {
 #if !defined(CELERIQUE_IMPL_EVENT)
 #if defined(__cplusplus)
 /// @brief A macro that shortens implementation of virtual
-/// methods when inheriting from `::celerique::Event`.
+/// methods when inheriting from `::celerique::EventBase`.
 /// @param className The name of the class to be implemented.
 /// @param eventCategory The category of which this event belongs to.
 #define CELERIQUE_IMPL_EVENT(className, eventCategory) \
@@ -207,7 +207,7 @@ inline ::std::type_index typeID() const override { \
 return ::std::type_index(typeid(className)); }
 #else
 /// @brief A macro that shortens implementation of virtual
-/// methods when inheriting from `::celerique::Event`. (Shortens to nothing).
+/// methods when inheriting from `::celerique::EventBase`. (Shortens to nothing).
 /// @param className The name of the class to be implemented.
 /// @param eventCategory The category of which this event belongs to.
 #define CELERIQUE_IMPL_EVENT(className, eventCategory)

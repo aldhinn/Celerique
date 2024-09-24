@@ -28,34 +28,34 @@ int main(int argc, char** argv) {
     ::std::atomic<bool> isRunning = true;
 
     /// @brief The pointer to the graphical user interface window.
-    ::std::unique_ptr<::celerique::IWindow> ptrWindow = ::celerique::win32::createWindow(
+    ::std::unique_ptr<::celerique::WindowBase> ptrWindow = ::celerique::win32::createWindow(
         700, 400, "CeleriqueEngineWin32PluginTesting"
     );
 
     // Listen to UI events.
-    ptrWindow->addEventListener([&](::std::shared_ptr<::celerique::Event> ptrEvent) {
+    ptrWindow->addEventListener([&](::std::shared_ptr<::celerique::EventBase> ptrEvent) {
         if (ptrEvent->typeID() == ::std::type_index(typeid(::celerique::event::WindowRequestClose))) {
             isRunning.store(false);
             celeriqueLogDebug("WindowRequestClose event was dispatched.");
         }
     });
-    ptrWindow->addEventListener([&](::std::shared_ptr<::celerique::Event> ptrEvent) {
+    ptrWindow->addEventListener([&](::std::shared_ptr<::celerique::EventBase> ptrEvent) {
         if (ptrEvent->typeID() == ::std::type_index(typeid(::celerique::event::WindowClose))) {
             isRunning.store(false);
             celeriqueLogDebug("WindowClose event was dispatched.");
         }
     });
-    ptrWindow->addEventListener([&](::std::shared_ptr<::celerique::Event> ptrEvent) {
+    ptrWindow->addEventListener([&](::std::shared_ptr<::celerique::EventBase> ptrEvent) {
         if (ptrEvent->typeID() == ::std::type_index(typeid(::celerique::event::WindowFocused))) {
             celeriqueLogDebug("WindowFocused event was dispatched.");
         }
     });
-    ptrWindow->addEventListener([&](::std::shared_ptr<::celerique::Event> ptrEvent) {
+    ptrWindow->addEventListener([&](::std::shared_ptr<::celerique::EventBase> ptrEvent) {
         if (ptrEvent->typeID() == ::std::type_index(typeid(::celerique::event::WindowMinimized))) {
             celeriqueLogDebug("WindowMinimized event was dispatched.");
         }
     });
-    ptrWindow->addEventListener([&](::std::shared_ptr<::celerique::Event> ptrEvent) {
+    ptrWindow->addEventListener([&](::std::shared_ptr<::celerique::EventBase> ptrEvent) {
         if (ptrEvent->typeID() == ::std::type_index(typeid(::celerique::event::WindowMove))) {
             ::celerique::event::WindowMove* ptrWindowMoveEvent = dynamic_cast<::celerique::event::WindowMove*>(ptrEvent.get());
             celeriqueLogTrace(
@@ -64,7 +64,7 @@ int main(int argc, char** argv) {
             );
         }
     });
-    ptrWindow->addEventListener([&](::std::shared_ptr<::celerique::Event> ptrEvent) {
+    ptrWindow->addEventListener([&](::std::shared_ptr<::celerique::EventBase> ptrEvent) {
         if (ptrEvent->typeID() == ::std::type_index(typeid(::celerique::event::WindowResize))) {
             ::celerique::event::WindowResize* ptrWindowResizeEvent = dynamic_cast<::celerique::event::WindowResize*>(ptrEvent.get());
             celeriqueLogTrace(
@@ -73,7 +73,7 @@ int main(int argc, char** argv) {
             );
         }
     });
-    ptrWindow->addEventListener([&](::std::shared_ptr<::celerique::Event> ptrEvent) {
+    ptrWindow->addEventListener([&](::std::shared_ptr<::celerique::EventBase> ptrEvent) {
         if (ptrEvent->typeID() == ::std::type_index(typeid(::celerique::event::MouseMoved))) {
             ::celerique::event::MouseMoved* ptrMouseMoveEvent = dynamic_cast<::celerique::event::MouseMoved*>(ptrEvent.get());
             celeriqueLogTrace(
@@ -82,7 +82,7 @@ int main(int argc, char** argv) {
             );
         }
     });
-    ptrWindow->addEventListener([&](::std::shared_ptr<::celerique::Event> ptrEvent) {
+    ptrWindow->addEventListener([&](::std::shared_ptr<::celerique::EventBase> ptrEvent) {
         if (ptrEvent->typeID() == ::std::type_index(typeid(::celerique::event::MouseClicked))) {
             ::celerique::event::MouseClicked* ptrMouseClickedEvent = dynamic_cast<::celerique::event::MouseClicked*>(ptrEvent.get());
             switch (ptrMouseClickedEvent->button()) {
@@ -113,7 +113,7 @@ int main(int argc, char** argv) {
             }
         }
     });
-    ptrWindow->addEventListener([&](::std::shared_ptr<::celerique::Event> ptrEvent) {
+    ptrWindow->addEventListener([&](::std::shared_ptr<::celerique::EventBase> ptrEvent) {
         if (ptrEvent->typeID() == ::std::type_index(typeid(::celerique::event::MouseReleased))) {
             ::celerique::event::MouseReleased* ptrMouseReleasedEvent = dynamic_cast<::celerique::event::MouseReleased*>(ptrEvent.get());
             switch (ptrMouseReleasedEvent->button()) {
@@ -144,7 +144,7 @@ int main(int argc, char** argv) {
             }
         }
     });
-    ptrWindow->addEventListener([&](::std::shared_ptr<::celerique::Event> ptrEvent) {
+    ptrWindow->addEventListener([&](::std::shared_ptr<::celerique::EventBase> ptrEvent) {
         if (ptrEvent->typeID() == ::std::type_index(typeid(::celerique::event::MouseScrolled))) {
             ::celerique::event::MouseScrolled* ptrMouseScrolledEvent = dynamic_cast<::celerique::event::MouseScrolled*>(ptrEvent.get());
             celeriqueLogTrace(
@@ -153,7 +153,7 @@ int main(int argc, char** argv) {
             );
         }
     });
-    ptrWindow->addEventListener([&](::std::shared_ptr<::celerique::Event> ptrEvent) {
+    ptrWindow->addEventListener([&](::std::shared_ptr<::celerique::EventBase> ptrEvent) {
         if (ptrEvent->typeID() == ::std::type_index(typeid(::celerique::event::KeyboardKeyPressed))) {
             ::celerique::event::KeyboardKeyPressed* ptrKeyboardKeyPressedEvent = dynamic_cast<::celerique::event::KeyboardKeyPressed*>(ptrEvent.get());
             celeriqueLogDebug(
@@ -161,7 +161,7 @@ int main(int argc, char** argv) {
             );
         }
     });
-    ptrWindow->addEventListener([&](::std::shared_ptr<::celerique::Event> ptrEvent) {
+    ptrWindow->addEventListener([&](::std::shared_ptr<::celerique::EventBase> ptrEvent) {
         if (ptrEvent->typeID() == ::std::type_index(typeid(::celerique::event::KeyboardKeyReleased))) {
             ::celerique::event::KeyboardKeyReleased* ptrKeyboardKeyReleasedEvent = dynamic_cast<::celerique::event::KeyboardKeyReleased*>(ptrEvent.get());
             celeriqueLogDebug(

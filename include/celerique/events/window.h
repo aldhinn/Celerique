@@ -23,7 +23,7 @@ namespace celerique { namespace event {
     typedef CeleriquePixelUnits PixelUnits;
 
     /// @brief A class of events regarding a desktop window.
-    class Window : public virtual Event {
+    class Window : public virtual EventBase {
     public:
         /// @brief Pure virtual destructor.
         virtual ~Window() = 0;
@@ -31,7 +31,7 @@ namespace celerique { namespace event {
 
     /// @brief An event type that contains information about resizing of the window.
     class CELERIQUE_SHARED_SYMBOL WindowResize final :
-    public virtual Window, public virtual Event {
+    public virtual Window, public virtual EventBase {
     public:
         /// @brief Init constructor.
         /// @param width Describes the new width of the window being resized.
@@ -58,7 +58,7 @@ namespace celerique { namespace event {
     /// @brief An event type that contains information about the
     /// movement of the window relative to the screen.
     class CELERIQUE_SHARED_SYMBOL WindowMove final :
-    public virtual Window, public virtual Event {
+    public virtual Window, public virtual EventBase {
     public:
         /// @brief Init constructor.
         /// @param xPos The new horizontal coordinate position relative
@@ -90,7 +90,7 @@ namespace celerique { namespace event {
 
     /// @brief An event type to be dispatched when the window is closing.
     class CELERIQUE_SHARED_SYMBOL WindowClose final :
-    public virtual Window, public virtual Event {
+    public virtual Window, public virtual EventBase {
     public:
         CELERIQUE_IMPL_EVENT(WindowClose, CELERIQUE_EVENT_CATEGORY_WINDOW);
     };
@@ -98,21 +98,21 @@ namespace celerique { namespace event {
     /// @brief An event type to be dispatched when there is a
     /// request to close the window.
     class CELERIQUE_SHARED_SYMBOL WindowRequestClose final :
-    public virtual Window, public virtual Event {
+    public virtual Window, public virtual EventBase {
     public:
         CELERIQUE_IMPL_EVENT(WindowRequestClose, CELERIQUE_EVENT_CATEGORY_WINDOW);
     };
 
     /// @brief An event type to be dispatched when the window is minimized.
     class CELERIQUE_SHARED_SYMBOL WindowMinimized final :
-    public virtual Window, public virtual Event {
+    public virtual Window, public virtual EventBase {
     public:
         CELERIQUE_IMPL_EVENT(WindowMinimized, CELERIQUE_EVENT_CATEGORY_WINDOW);
     };
 
     /// @brief An event type to be dispatched when the window is being focused.
     class CELERIQUE_SHARED_SYMBOL WindowFocused final :
-    public virtual Window, public virtual Event {
+    public virtual Window, public virtual EventBase {
     public:
         CELERIQUE_IMPL_EVENT(WindowFocused, CELERIQUE_EVENT_CATEGORY_WINDOW);
     };

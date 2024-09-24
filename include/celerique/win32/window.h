@@ -27,7 +27,8 @@ namespace celerique { namespace win32 {
     /// @param defaultWidth The default horizontal dimension of the window.
     /// @param defaultHeight The default vertical dimension of the window.
     /// @param title The title on the window's title bar.
-    CELERIQUE_SHARED_SYMBOL ::std::unique_ptr<IWindow> createWindow(
+    /// @return The unique pointer to an abstraction to the win32 window.
+    CELERIQUE_SHARED_SYMBOL ::std::unique_ptr<WindowBase> createWindow(
         PixelUnits defaultWidth, PixelUnits defaultHeight, ::std::string&& title
     );
 }}

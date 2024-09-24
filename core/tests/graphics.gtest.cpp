@@ -33,7 +33,7 @@ namespace celerique {
         MOCK_METHOD0(clearBuffers, void());
     };
     /// @brief A mock implementation of an interface to a graphical user interface window.
-    class MockWindow : public IWindow {
+    class MockWindow : public WindowBase {
     public:
         MOCK_METHOD1(onUpdate, void(::std::shared_ptr<IUpdateData>));;
     };
@@ -42,7 +42,7 @@ namespace celerique {
     class GraphicsUnitTestCpp : public ::testing::Test {
         protected:
         /// @brief The unique pointer to the window interface instance.
-        ::std::shared_ptr<IWindow> _ptrWindow;
+        ::std::shared_ptr<WindowBase> _ptrWindow;
         /// @brief The shared pointer to the mock graphics API interface.
         ::std::shared_ptr<IGraphicsAPI> _ptrGraphicsApi;
 

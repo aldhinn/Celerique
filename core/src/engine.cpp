@@ -19,14 +19,14 @@ void ::celerique::internal::Engine::onUpdate(::std::shared_ptr<IUpdateData> ptrU
     {
         ::std::shared_lock<::std::shared_mutex> readLock(_layerMutex);
         // Update layers.
-        for (::std::unique_ptr<IApplicationLayer>& ptrAppLayer :_listPtrAppLayers) {
+        for (::std::unique_ptr<ApplicationLayerBase>& ptrAppLayer :_listPtrAppLayers) {
             ptrAppLayer->onUpdate(ptrUpdateData);
         }
     }
     {
         ::std::shared_lock<::std::shared_mutex> readLock(_windowsMutex);
         // Update graphical user interface windows.
-        for (::std::unique_ptr<IWindow>& ptrWindow : _listPtrWindows) {
+        for (::std::unique_ptr<WindowBase>& ptrWindow : _listPtrWindows) {
             ptrWindow->onUpdate();
         }
     }
@@ -34,7 +34,7 @@ void ::celerique::internal::Engine::onUpdate(::std::shared_ptr<IUpdateData> ptrU
 
 /// @brief The event handler method.
 /// @param ptrEvent The shared pointer to the event being dispatched.
-void ::celerique::internal::Engine::onEvent(::std::shared_ptr<Event> ptrEvent) {
+void ::celerique::internal::Engine::onEvent(::std::shared_ptr<EventBase> ptrEvent) {
     EventDispatcher dispatcher(ptrEvent);
     dispatcher.dispatch<::celerique::event::EngineShutdown>(
         ::std::bind(&Engine::onEngineShutdown, this, ptrEvent), CELERIQUE_EVENT_HANDLING_STRATEGY_BLOCKING
@@ -49,8 +49,8 @@ void ::celerique::internal::Engine::onEvent(::std::shared_ptr<Event> ptrEvent) {
 
         // Dispatch input and window events to layers (from last to first).
         for (auto layerRIterator = _listPtrAppLayers.rbegin(); layerRIterator != _listPtrAppLayers.rend(); layerRIterator++) {
-            dispatcher.dispatch<::celerique::Event>(
-                ::std::bind(&IApplicationLayer::onEvent, (*layerRIterator).get(), ptrEvent), CELERIQUE_EVENT_HANDLING_STRATEGY_BLOCKING
+            dispatcher.dispatch<::celerique::EventBase>(
+                ::std::bind(&ApplicationLayerBase::onEvent, (*layerRIterator).get(), ptrEvent), CELERIQUE_EVENT_HANDLING_STRATEGY_BLOCKING
             );
         }
     }
@@ -58,7 +58,7 @@ void ::celerique::internal::Engine::onEvent(::std::shared_ptr<Event> ptrEvent) {
 
 /// @brief Add an application layer to be managed by the engine.
 /// @param ptrAppLayer The unique pointer to the application layer instance.
-void ::celerique::internal::Engine::addAppLayer(::std::unique_ptr<IApplicationLayer>&& ptrAppLayer) {
+void ::celerique::internal::Engine::addAppLayer(::std::unique_ptr<ApplicationLayerBase>&& ptrAppLayer) {
     ::std::unique_lock<::std::shared_mutex> writeLock(_layerMutex);
 
     ptrAppLayer->addEventListener(this);
@@ -68,7 +68,7 @@ void ::celerique::internal::Engine::addAppLayer(::std::unique_ptr<IApplicationLa
 
 /// @brief Add a graphical user interface window to be managed by the engine.
 /// @param ptrWindow The unique pointer to the window instance.
-void ::celerique::internal::Engine::addWindow(::std::unique_ptr<IWindow>&& ptrWindow) {
+void ::celerique::internal::Engine::addWindow(::std::unique_ptr<WindowBase>&& ptrWindow) {
     ::std::unique_lock<::std::shared_mutex> writeLock(_windowsMutex);
 
     ptrWindow->addEventListener(this);
@@ -108,7 +108,7 @@ void ::celerique::internal::Engine::run() {
 
 /// @brief The event handler for engine shutdown event.
 /// @param ptrEvent The shared pointer to the event being dispatched.
-void ::celerique::internal::Engine::onEngineShutdown(::std::shared_ptr<Event> ptrEvent) {
+void ::celerique::internal::Engine::onEngineShutdown(::std::shared_ptr<EventBase> ptrEvent) {
     _atomicShouldAppLoopRunning.store(false, ::std::memory_order_release);
     ptrEvent->completePropagation();
     celeriqueLogTrace("Engine shutdown event was dispatched.");
@@ -132,13 +132,13 @@ void ::celerique::onUpdate(::std::shared_ptr<EngineUpdateData> ptrUpdateData) {
 
 /// @brief Add an application layer to be managed by the engine.
 /// @param ptrAppLayer The unique pointer to the application layer instance.
-void ::celerique::addAppLayer(::std::unique_ptr<IApplicationLayer>&& ptrAppLayer) {
+void ::celerique::addAppLayer(::std::unique_ptr<ApplicationLayerBase>&& ptrAppLayer) {
     internal::Engine::getRef().addAppLayer(::std::move(ptrAppLayer));
 }
 
 /// @brief Add a graphical user interface window to be managed by the engine.
 /// @param ptrWindow The unique pointer to the window instance.
-void ::celerique::addWindow(::std::unique_ptr<IWindow>&& ptrWindow) {
+void ::celerique::addWindow(::std::unique_ptr<WindowBase>&& ptrWindow) {
     internal::Engine::getRef().addWindow(::std::move(ptrWindow));
 }
 
@@ -166,4 +166,4 @@ int64_t celerique::EngineUpdateData::elapsedMilliSecs() const {
 }
 
 /// @brief Pure virtual destructor.
-::celerique::IApplicationLayer::~IApplicationLayer() {}
+::celerique::ApplicationLayerBase::~ApplicationLayerBase() {}

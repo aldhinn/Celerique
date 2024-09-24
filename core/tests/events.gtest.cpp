@@ -17,7 +17,7 @@ License: Mozilla Public License 2.0. (See ./LICENSE).
 
 namespace celerique {
     /// @brief A mock implementation of an event.
-    class MockEvent1 : public Event {
+    class MockEvent1 : public EventBase {
     public:
         MOCK_CONST_METHOD0(category, EventCategory());
         MOCK_CONST_METHOD0(typeID, ::std::type_index());
@@ -28,7 +28,7 @@ namespace celerique {
         }
     };
     /// @brief Another mock implementation of an event.
-    class MockEvent2 : public Event {
+    class MockEvent2 : public EventBase {
     public:
         MOCK_CONST_METHOD0(category, EventCategory());
         MOCK_CONST_METHOD0(typeID, ::std::type_index());
@@ -41,7 +41,7 @@ namespace celerique {
 
     /// @brief The GTest unit test suite for the event system.
     class EventUnitTestCpp : public ::testing::Test, public virtual IEventListener,
-    public virtual EventBroadcaster {
+    public virtual EventBroadcasterBase {
     protected:
         /// @brief Reset the state variables.
         inline void resetStates() {
@@ -67,25 +67,25 @@ namespace celerique {
     public:
         /// @brief Event handler for events of type `MockEvent1`
         /// @param ptrEvent The shared pointer to the event being handled.
-        inline void onMockEvent1(::std::shared_ptr<Event> ptrEvent) {
+        inline void onMockEvent1(::std::shared_ptr<EventBase> ptrEvent) {
             _didDispatchMockEvent1 = true;
         }
         /// @brief Event handler for events of type `MockEvent2`
         /// @param ptrEvent The shared pointer to the event being handled.
-        inline void onMockEvent2(::std::shared_ptr<Event> ptrEvent) {
+        inline void onMockEvent2(::std::shared_ptr<EventBase> ptrEvent) {
             _didDispatchMockEvent2 = true;
         }
         /// @brief A generic event handler.
         /// @param ptrEvent The shared pointer to the event being handled.
-        inline void onEvent(::std::shared_ptr<Event> ptrEvent) override {
+        inline void onEvent(::std::shared_ptr<EventBase> ptrEvent) override {
             _didDispatchGenericEvent = true;
         }
 
     protected:
         /// @brief Pointer to a `MockEvent1` instance.
-        ::std::shared_ptr<Event> ptrMockEvent1 = ::std::make_shared<MockEvent1>();
+        ::std::shared_ptr<EventBase> ptrMockEvent1 = ::std::make_shared<MockEvent1>();
         /// @brief Pointer to a `MockEvent2` instance.
-        ::std::shared_ptr<Event> ptrMockEvent2 = ::std::make_shared<MockEvent2>();
+        ::std::shared_ptr<EventBase> ptrMockEvent2 = ::std::make_shared<MockEvent2>();
 
     private:
         /// @brief State variable indicating if an event handler for
@@ -173,7 +173,7 @@ namespace celerique {
         // Dispatcher.
         EventDispatcher dispatcher(ptrMockEvent1);
         // Dispatch to a generic event handler.
-        dispatcher.dispatch<Event>(::std::bind(
+        dispatcher.dispatch<EventBase>(::std::bind(
             &EventUnitTestCpp::onEvent, this, ::std::placeholders::_1
         ));
 
@@ -181,7 +181,7 @@ namespace celerique {
     }
 
     /// @brief An event type that carries some data.
-    class DataCarryingEvent : public virtual Event {
+    class DataCarryingEvent : public virtual EventBase {
     public:
         /// @brief Init constructor.
         /// @param data The data to be passed.
@@ -205,10 +205,10 @@ namespace celerique {
         ::std::atomic<size_t> dataReceived = 0;
 
         // Construct a shared pointer event to be dispatched.
-        ::std::shared_ptr<Event> ptrEvent = ::std::make_shared<DataCarryingEvent>(dataSent);
+        ::std::shared_ptr<EventBase> ptrEvent = ::std::make_shared<DataCarryingEvent>(dataSent);
         // Attempt to dispatch.
         EventDispatcher dispatcher(ptrEvent);
-        dispatcher.dispatch<DataCarryingEvent>([&](::std::shared_ptr<Event> e) {
+        dispatcher.dispatch<DataCarryingEvent>([&](::std::shared_ptr<EventBase> e) {
             // Extract mock event pointer. No need to de-allocate.
             DataCarryingEvent* ptrMockEvent = dynamic_cast<DataCarryingEvent*>(e.get());
             // If failed, halt execution.
@@ -230,7 +230,7 @@ namespace celerique {
             ::std::shared_ptr<DataCarryingEvent> ptrEvent = ::std::make_shared<DataCarryingEvent>(dataSent);
             EventDispatcher dispatcher(ptrEvent);
             // Dispatch asynchronously to quickly get dispatcher object out of scope.
-            dispatcher.dispatch<DataCarryingEvent>([&](::std::shared_ptr<Event> e) {
+            dispatcher.dispatch<DataCarryingEvent>([&](::std::shared_ptr<EventBase> e) {
                 // Extract mock event pointer. No need to de-allocate.
                 DataCarryingEvent* ptrMockEvent = dynamic_cast<DataCarryingEvent*>(e.get());
                 // If failed, halt execution.

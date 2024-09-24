@@ -18,7 +18,7 @@ License: Mozilla Public License 2.0. (See ./LICENSE).
 #if defined(__cplusplus)
 namespace celerique { namespace event {
     /// @brief A class of events regarding engine events.
-    class Engine : public virtual Event {
+    class Engine : public virtual EventBase {
     public:
         /// @brief Pure virtual destructor.
         virtual ~Engine() = 0;
@@ -26,7 +26,7 @@ namespace celerique { namespace event {
 
     /// @brief An event type regarding the engine shutting down.
     class CELERIQUE_SHARED_SYMBOL EngineShutdown final : public virtual event::Engine,
-    public virtual Event {
+    public virtual EventBase {
     public:
         CELERIQUE_IMPL_EVENT(EngineShutdown, CELERIQUE_EVENT_CATEGORY_ENGINE);
     };

@@ -13,9 +13,9 @@ License: Mozilla Public License 2.0. (See ./LICENSE).
 
 #include <utility>
 
-namespace celerique {
+namespace celerique::testing {
     /// @brief The application layer that facilitates drawing a triangle.
-    class TriangleApp : public virtual IApplicationLayer {
+    class TriangleApp : public virtual ApplicationLayerBase {
     public:
         /// @brief Updates the state.
         /// @param ptrArg The shared pointer to the update data container.
@@ -24,9 +24,9 @@ namespace celerique {
         }
         /// @brief The event handler method.
         /// @param ptrEvent The shared pointer to the event being dispatched.
-        void onEvent(::std::shared_ptr<Event> ptrEvent) override {
+        void onEvent(::std::shared_ptr<EventBase> ptrEvent) override {
             EventDispatcher dispatcher(::std::move(ptrEvent));
-            dispatcher.dispatch<event::WindowRequestClose>([&](::std::shared_ptr<Event>) {
+            dispatcher.dispatch<event::WindowRequestClose>([&](::std::shared_ptr<EventBase>) {
                 broadcast(::std::make_shared<event::EngineShutdown>());
             });
         }
@@ -63,11 +63,11 @@ int main(int argc, char** argv) {
     using ::celerique::win32::createWindow;
 #endif
 
-    ::std::unique_ptr<::celerique::IWindow> ptrWindow = createWindow(700, 500, "Triangle Application");
+    ::std::unique_ptr<::celerique::WindowBase> ptrWindow = createWindow(700, 500, "Triangle Application");
     ptrWindow->useGraphicsApi(::celerique::vulkan::getGraphicsApiInterface());
     ::celerique::addWindow(::std::move(ptrWindow));
 
-    ::celerique::addAppLayer(::std::make_unique<::celerique::TriangleApp>());
+    ::celerique::addAppLayer(::std::make_unique<::celerique::testing::TriangleApp>());
     ::celerique::run();
 
     return EXIT_SUCCESS;

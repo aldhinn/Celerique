@@ -22,7 +22,7 @@ License: Mozilla Public License 2.0. (See ./LICENSE).
 /// @brief The state variable that indicates if the window class has already been registered.
 bool ::celerique::win32::internal::Window::_hasWindowClassRegistered = false;
 
-::std::unique_ptr<::celerique::IWindow> celerique::win32::createWindow(
+::std::unique_ptr<::celerique::WindowBase> celerique::win32::createWindow(
     ::celerique::win32::PixelUnits defaultWidth,
     ::celerique::win32::PixelUnits defaultHeight,
     ::std::string&& title

@@ -24,7 +24,7 @@ namespace celerique { namespace event {
     typedef CeleriqueKeyCode KeyCode;
 
     /// @brief A class of event regarding keyboard events.
-    class Keyboard : public virtual Event {
+    class Keyboard : public virtual EventBase {
     public:
         /// @brief Init constructor.
         /// @param keyCode The encoding of the keyboard key focused by this event object.
@@ -46,7 +46,7 @@ namespace celerique { namespace event {
 
     /// @brief An event type regarding keyboard key presses.
     class CELERIQUE_SHARED_SYMBOL KeyboardKeyPressed final :
-    public virtual Keyboard, public virtual Event {
+    public virtual Keyboard, public virtual EventBase {
     public:
         /// @brief Init constructor.
         /// @param keyCode The encoding of the key pressed by the user.
@@ -70,7 +70,7 @@ namespace celerique { namespace event {
 
     /// @brief An event type regarding keyboard key is released.
     class CELERIQUE_SHARED_SYMBOL KeyboardKeyReleased final :
-    public virtual Keyboard, public virtual Event {
+    public virtual Keyboard, public virtual EventBase {
     public:
         /// @brief Init constructor.
         /// @param keyCode The encoding of the key released by the user.
