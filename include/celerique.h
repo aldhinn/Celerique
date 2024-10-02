@@ -62,6 +62,8 @@ namespace celerique {
     /// @brief The container for the engine's update argument data.
     class CELERIQUE_SHARED_SYMBOL EngineUpdateData : public virtual IUpdateData {
     public:
+        /// @brief Initializer constructor.
+        /// @param elapsedNanoSecs The amount of time in nano seconds that passed since the last update cycle.
         EngineUpdateData(::std::chrono::nanoseconds&& elapsedNanoSecs);
 
         /// @return The amount of time in nanoseconds that passed since the last update cycle.

@@ -147,6 +147,8 @@ void ::celerique::run() {
     internal::Engine::getRef().run();
 }
 
+/// @brief Initializer constructor.
+/// @param elapsedNanoSecs The amount of time in nano seconds that passed since the last update cycle.
 ::celerique::EngineUpdateData::EngineUpdateData(::std::chrono::nanoseconds&& elapsedNanoSecs) :
 _elapsedNanoSecs(::std::move(elapsedNanoSecs)) {}
 
