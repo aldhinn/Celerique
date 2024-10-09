@@ -267,10 +267,10 @@ namespace celerique {
 
     /// @brief Generate an engine-wide unique pipeline configuration identifier.
     /// @return The generated `PipelineConfigID`.
-    CELERIQUE_SHARED_SYMBOL PipelineConfigID genPipelineConfigID();
+    PipelineConfigID genPipelineConfigID();
     /// @brief Generate an engine-wide unique GPU buffer identifier.
     /// @return The generated `GpuBufferID`.
-    CELERIQUE_SHARED_SYMBOL GpuBufferID genGpuBufferId();
+    GpuBufferID genGpuBufferId();
 }
 #endif
 // End C++ Only Region

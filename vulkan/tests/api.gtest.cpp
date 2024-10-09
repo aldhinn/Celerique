@@ -85,4 +85,40 @@ namespace celerique { namespace vulkan {
         ptrWindow->useGraphicsApi(vulkanGraphicsApi);
         ptrWindow->useGraphicsApi(vulkanGraphicsApi);
     }
+
+    TEST_F(GraphicsApiUnitTestCpp, createCopyDataThenFreeBuffer) {
+        // TODO: Delete pushing window to graphics API when 
+        ::std::unique_ptr<WindowBase> ptrWindow = createWindow(10, 10, "");
+        ::std::shared_ptr<IGraphicsAPI> vulkanGraphicsApi = getGraphicsApiInterface();
+        ptrWindow->useGraphicsApi(vulkanGraphicsApi);
+
+        /// @brief The size of the GPU buffer.
+        size_t bufferSize = 10;
+        /// @brief The GPU buffer identifier.
+        GpuBufferID bufferId = vulkanGraphicsApi->createBuffer(bufferSize, CELERIQUE_GPU_BUFFER_USAGE_UNIFORM);
+
+        /// @brief The source of the data to be copied over to the buffer.
+        char dataSrc[] = "dataSrc";
+        /// @brief The size of the data source.
+        size_t dataSize = sizeof(dataSrc) / sizeof(char);
+        // Check.
+        GTEST_ASSERT_LE(dataSize, bufferSize);
+        // Copy data to the GPU buffer.
+        vulkanGraphicsApi->copyToBuffer(bufferId, reinterpret_cast<void*>(dataSrc), dataSize);
+
+        /// @brief Another data source.
+        char anotherDataSrc[] = "anotherDataSrc";
+        /// @brief The size of the other data source.
+        size_t anotherDataSize = sizeof(anotherDataSrc) / sizeof(char);
+        // Check.
+        GTEST_ASSERT_GE(anotherDataSize, bufferSize);
+        // An exception is thrown when the data size is greater than the buffer size.
+        GTEST_TEST_THROW_(
+            vulkanGraphicsApi->copyToBuffer(bufferId, reinterpret_cast<void*>(anotherDataSrc), anotherDataSize),
+            ::std::runtime_error,
+            GTEST_FATAL_FAILURE_
+        );
+
+        vulkanGraphicsApi->freeBuffer(bufferId);
+    }
 }}

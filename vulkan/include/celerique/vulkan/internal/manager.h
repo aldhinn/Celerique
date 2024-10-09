@@ -71,6 +71,22 @@ namespace celerique { namespace vulkan { namespace internal {
         /// @param windowHandle The handle to the window whose swapchain needs to be recreated.
         void reCreateSwapChain(Pointer windowHandle);
 
+        /// @brief Create a buffer of memory in the GPU.
+        /// @param size The size of the memory to create & allocate.
+        /// @param usageFlagBits The usage of the buffer.
+        /// @param currentId The unique identifier of the GPU buffer.
+        void createBuffer(GpuBufferID currentId, size_t size, GpuBufferUsage usageFlagBits);
+        /// @brief Copy data from the CPU to the GPU buffer.
+        /// @param bufferId The unique identifier of the GPU buffer.
+        /// @param ptrDataSrc The pointer to where the data to be copied to the GPU resides.
+        /// @param dataSize The size of the data to be copied.
+        void copyToBuffer(GpuBufferID bufferId, void* ptrDataSrc, size_t dataSize);
+        /// @brief Free the specified GPU buffer.
+        /// @param bufferId The unique identifier of the GPU buffer.
+        void freeBuffer(GpuBufferID bufferId);
+        /// @brief Clear and free all GPU buffers.
+        void clearBuffers();
+
     private:
         /// @brief Default constructor. (Private to prevent instantiation).
         Manager();
@@ -88,8 +104,8 @@ namespace celerique { namespace vulkan { namespace internal {
     private:
         /// @brief Destroy all sync objects.
         void destroySyncObjects();
-        /// @brief Destroy all mesh buffer handlers.
-        void destroyMeshBufferHandlers();
+        /// @brief Destroy all memory buffer handlers.
+        void destroyMemoryBufferHandlers();
         /// @brief Destroy all pipeline related objects.
         void destroyPipelines();
         /// @brief Destroy all swapchain frame buffers.
@@ -425,9 +441,20 @@ namespace celerique { namespace vulkan { namespace internal {
         /// @brief The map of a pipeline to the logical device that created it.
         ::std::unordered_map<VkPipeline, VkDevice> _mapPipelineToLogicDev;
 
-    // Validation layer objects.
+    // Vulkan memory resources.
     private:
+        /// @brief The map of a GPU buffer ID to its logical device.
+        ::std::unordered_map<GpuBufferID, VkDevice> _mapGpuBufferIdToLogicDev;
+        /// @brief The map of a GPU buffer ID to the vulkan buffer handle.
+        ::std::unordered_map<GpuBufferID, VkBuffer> _mapGpuBufferIdToVkBuffer;
+        /// @brief The map of a GPU buffer ID to the vulkan device memory handle.
+        ::std::unordered_map<GpuBufferID, VkDeviceMemory> _mapGpuBufferIdToDevMemory;
+        /// @brief The map of a GPU buffer ID to its memory size.
+        ::std::unordered_map<GpuBufferID, size_t> _mapGpuBufferIdToSize;
+
+    // Validation layer objects.
 #if defined(CELERIQUE_DEBUG_MODE)
+    private:
         /// @brief The debug messenger handle.
         VkDebugUtilsMessengerEXT _debugMessenger = nullptr;
 #endif

@@ -544,6 +544,165 @@ void celerique::vulkan::internal::Manager::reCreateSwapChain(Pointer windowHandl
     createCommandBuffers(windowHandle);
 }
 
+/// @brief Create a buffer of memory in the GPU.
+/// @param size The size of the memory to create & allocate.
+/// @param usageFlagBits The usage of the buffer.
+/// @param currentId The unique identifier of the GPU buffer.
+void celerique::vulkan::internal::Manager::createBuffer(GpuBufferID currentId, size_t size, GpuBufferUsage usageFlagBits) {
+    // TODO: Properly select the logical device to create the buffer. Will settle on the first graphics logical device for now.
+
+    /// @brief The logical device to create the buffer.
+    VkDevice logicalDevice = _vecGraphicsLogicDev[0];
+
+    // TODO: Remove if statement after proper logical device selection process is implemented.
+    if (logicalDevice == nullptr) {
+        celeriqueLogDebug("No logical device to create the buffer.");
+        return;
+    }
+
+    /// @brief The vulkan usage flags to be turned on.
+    VkBufferUsageFlags vulkanUsageFlags = 0;
+    if ((usageFlagBits & CELERIQUE_GPU_BUFFER_USAGE_VERTEX) != 0) {
+        vulkanUsageFlags |= VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+    }
+    if ((usageFlagBits & CELERIQUE_GPU_BUFFER_USAGE_INDEX) != 0) {
+        vulkanUsageFlags |= VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
+    }
+    if ((usageFlagBits & CELERIQUE_GPU_BUFFER_USAGE_UNIFORM) != 0) {
+        vulkanUsageFlags |= VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
+    }
+
+    /// @brief The memory property flags to be turned on.
+    VkMemoryPropertyFlags memoryPropertyFlags = 0;
+    if ((usageFlagBits & (CELERIQUE_GPU_BUFFER_USAGE_VERTEX |
+    CELERIQUE_GPU_BUFFER_USAGE_INDEX | CELERIQUE_GPU_BUFFER_USAGE_UNIFORM)) != 0) {
+        vulkanUsageFlags |= VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+        memoryPropertyFlags |= VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+    }
+
+    /// @brief The vulkan buffer handle.
+    VkBuffer vkBuffer = nullptr;
+    /// @brief The vulkan device memory handle.
+    VkDeviceMemory deviceMemory = nullptr;
+
+    createBufferAndAllocateMemory(
+        logicalDevice, static_cast<VkDeviceSize>(size), vulkanUsageFlags,
+        memoryPropertyFlags, &vkBuffer, &deviceMemory
+    );
+
+    _mapGpuBufferIdToLogicDev[currentId] = logicalDevice;
+    _mapGpuBufferIdToVkBuffer[currentId] = vkBuffer;
+    _mapGpuBufferIdToDevMemory[currentId] = deviceMemory;
+    _mapGpuBufferIdToSize[currentId] = size;
+
+    celeriqueLogDebug("Created buffer ID " + ::std::to_string(currentId) + " of size " + ::std::to_string(size) + ".");
+}
+
+/// @brief Copy data from the CPU to the GPU buffer.
+/// @param bufferId The unique identifier of the GPU buffer.
+/// @param ptrDataSrc The pointer to where the data to be copied to the GPU resides.
+/// @param dataSize The size of the data to be copied.
+void celerique::vulkan::internal::Manager::copyToBuffer(
+    GpuBufferID bufferId, void* ptrDataSrc, size_t dataSize
+) {
+    /// @brief The size of the buffer to be filled data with.
+    size_t bufferSize = _mapGpuBufferIdToSize[bufferId];
+    if (dataSize > bufferSize) {
+        ::std::string errorMessage = "Buffer size is only " + ::std::to_string(bufferSize) +
+            " bytes while the data size is " + ::std::to_string(dataSize) + " bytes.";
+        celeriqueLogError(errorMessage);
+        throw ::std::runtime_error(errorMessage);
+    }
+
+    /// @brief The variable that stores the result of any vulkan function called.
+    VkResult result;
+    // TODO: Properly select logical device.
+
+    /// @brief The logical device to be used for memory allocations.
+    VkDevice logicalDevice = _vecGraphicsLogicDev[0];
+    /// @brief The handle to the destination Vulkan buffer.
+    VkBuffer vulkanBuffer = _mapGpuBufferIdToVkBuffer[bufferId];
+
+    /// @brief The CPU accessible objects buffer.
+    VkBuffer stagingObjectsBuffer = nullptr;
+    /// @brief The CPU accessible objects buffer memory.
+    VkDeviceMemory stagingObjectsBufferMemory = nullptr;
+    // Create resources for staging buffer and memory.
+    createBufferAndAllocateMemory(
+        logicalDevice, dataSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+        &stagingObjectsBuffer, &stagingObjectsBufferMemory
+    );
+
+    /// @brief The pointer to the CPU accessible buffer of `stagingObjectsBuffer`.
+    void* ptrStagingDataSrc = nullptr;
+    result = vkMapMemory(logicalDevice, stagingObjectsBufferMemory, 0, dataSize, 0, &ptrStagingDataSrc);
+    if (result != VK_SUCCESS) {
+        ::std::string errorMessage = "Failed to map memory with result " + ::std::to_string(result);
+        celeriqueLogError(errorMessage);
+        throw ::std::runtime_error(errorMessage);
+    }
+    // Copy the data source to the mapped staging data buffer.
+    memcpy(ptrStagingDataSrc, ptrDataSrc, dataSize);
+    // Unmap `ptrStagingDataSrc` as it is no longer needed.
+    vkUnmapMemory(logicalDevice, stagingObjectsBufferMemory);
+
+    /// @brief The handle to the physical device that the logical device represents.
+    VkPhysicalDevice physicalDevice = _mapLogicDevToPhysDev[logicalDevice];
+    /// @brief The command queue used for copy submission. (will be using the graphics queue).
+    VkQueue copyCommandQueue = selectGraphicsQueue(logicalDevice);
+
+    copyVulkanBufferData(logicalDevice, copyCommandQueue, stagingObjectsBuffer, vulkanBuffer, dataSize);
+
+    // Destroy staging resources.
+    vkFreeMemory(logicalDevice, stagingObjectsBufferMemory, nullptr);
+    vkDestroyBuffer(logicalDevice, stagingObjectsBuffer, nullptr);
+}
+
+/// @brief Free the specified GPU buffer.
+/// @param bufferId The unique identifier of the GPU buffer.
+void celerique::vulkan::internal::Manager::freeBuffer(GpuBufferID bufferId) {
+    /// @brief The logical device that created the Vulkan buffer handler.
+    VkDevice logicalDevice = _mapGpuBufferIdToLogicDev[bufferId];
+    /// @brief The vulkan buffer handle.
+    VkBuffer vkBuffer = _mapGpuBufferIdToVkBuffer[bufferId];
+    /// @brief The vulkan device memory handle.
+    VkDeviceMemory deviceMemory = _mapGpuBufferIdToDevMemory[bufferId];
+
+    vkFreeMemory(logicalDevice, deviceMemory, nullptr);
+    vkDestroyBuffer(logicalDevice, vkBuffer, nullptr);
+
+    _mapGpuBufferIdToLogicDev.erase(bufferId);
+    _mapGpuBufferIdToVkBuffer.erase(bufferId);
+    _mapGpuBufferIdToDevMemory.erase(bufferId);
+    _mapGpuBufferIdToSize.erase(bufferId);
+
+    celeriqueLogDebug("Freed buffer ID " + ::std::to_string(bufferId));
+}
+
+/// @brief Clear and free all GPU buffers.
+void celerique::vulkan::internal::Manager::clearBuffers() {
+    // Iterate all over GPU buffer Id's.
+    for (const auto& pairGpuBufferIdToLogicDev : _mapGpuBufferIdToLogicDev) {
+        /// @brief The identifier of the GPU buffer being deleted.
+        GpuBufferID bufferId = pairGpuBufferIdToLogicDev.first;
+        /// @brief The logical device that created the Vulkan buffer handler.
+        VkDevice logicalDevice = pairGpuBufferIdToLogicDev.second;
+        /// @brief The vulkan buffer handle.
+        VkBuffer vkBuffer = _mapGpuBufferIdToVkBuffer[bufferId];
+        /// @brief The vulkan device memory handle.
+        VkDeviceMemory deviceMemory = _mapGpuBufferIdToDevMemory[bufferId];
+
+        vkFreeMemory(logicalDevice, deviceMemory, nullptr);
+        vkDestroyBuffer(logicalDevice, vkBuffer, nullptr);
+    }
+    _mapGpuBufferIdToLogicDev.clear();
+    _mapGpuBufferIdToVkBuffer.clear();
+    _mapGpuBufferIdToDevMemory.clear();
+    _mapGpuBufferIdToSize.clear();
+    celeriqueLogTrace("Cleared all memory buffer handlers.");
+}
+
 /// @brief Default constructor. (Private to prevent instantiation).
 celerique::vulkan::internal::Manager::Manager() {
     // Write lock thread during initialization.
@@ -569,7 +728,7 @@ celerique::vulkan::internal::Manager::~Manager() {
     }
 
     destroySyncObjects();
-    destroyMeshBufferHandlers();
+    destroyMemoryBufferHandlers();
     destroyPipelines();
     destroySwapChainFrameBuffers();
     destroyRenderPass();
@@ -776,8 +935,8 @@ void celerique::vulkan::internal::Manager::destroySyncObjects() {
     celeriqueLogTrace("Destroyed all sync objects.");
 }
 
-/// @brief Destroy all mesh buffer handlers.
-void celerique::vulkan::internal::Manager::destroyMeshBufferHandlers() {
+/// @brief Destroy all memory buffer handlers.
+void celerique::vulkan::internal::Manager::destroyMemoryBufferHandlers() {
     // Iterate over device memory handles and destroy.
     for (const auto& pairWindowToVecMeshBufferMemories : _mapWindowToVecMeshBufferMemories) {
         /// @brief The handle to the window.
@@ -814,6 +973,8 @@ void celerique::vulkan::internal::Manager::destroyMeshBufferHandlers() {
     _mapWindowToVecMeshBuffers.clear();
 
     celeriqueLogTrace("Destroyed all mesh buffer handlers.");
+
+    clearBuffers();
 }
 
 /// @brief Destroy all pipeline related objects.

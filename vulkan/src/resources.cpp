@@ -19,7 +19,7 @@ License: Mozilla Public License 2.0. (See ./LICENSE).
     size_t size, GpuBufferUsage usageFlagBits
 ) {
     GpuBufferID currentId = genGpuBufferId();
-    // TODO: Implement.
+    refManager.createBuffer(currentId, size, usageFlagBits);
     return currentId;
 }
 
@@ -30,18 +30,18 @@ License: Mozilla Public License 2.0. (See ./LICENSE).
 void celerique::vulkan::internal::GpuResources::copyToBuffer(
     GpuBufferID bufferId, void* ptrDataSrc, size_t dataSize
 ) {
-    // TODO: Implement.
+    refManager.copyToBuffer(bufferId, ptrDataSrc, dataSize);
 }
 
 /// @brief Free the specified GPU buffer.
 /// @param bufferId The unique identifier of the GPU buffer.
 void celerique::vulkan::internal::GpuResources::freeBuffer(GpuBufferID bufferId) {
-    // TODO: Implement.
+    refManager.freeBuffer(bufferId);
 }
 
 /// @brief Clear and free all GPU buffers.
 void celerique::vulkan::internal::GpuResources::clearBuffers() {
-    // TODO: Implement.
+    refManager.clearBuffers();
 }
 
 /// @brief Default constructor. Protected to prevent instantiation.
