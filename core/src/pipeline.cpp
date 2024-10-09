@@ -124,7 +124,7 @@ _ptrBuffer(other._ptrBuffer) {
     ::std::list<InputLayout>&& listUnformInputLayouts
 ) : _mapShaderStageToShaderProgram(::std::move(mapShaderStageToShaderProgram)),
 _listVertexInputLayouts(::std::move(listVertexInputLayouts)),
-_listUnformInputLayouts(listUnformInputLayouts) {}
+_listUnformInputLayouts(::std::move(listUnformInputLayouts)) {}
 
 /// @brief A shader program container that contains no shader.
 static ::celerique::ShaderProgram emptyShaderProgram(0, nullptr);
