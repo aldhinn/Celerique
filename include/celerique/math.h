@@ -59,7 +59,7 @@ namespace celerique {
 
         /// @brief The size of the vector.
         /// @return The number of elements this vector can hold..
-        inline ArraySize size() const { return numElements; }
+        inline static ArraySize size() { return numElements; }
         /// @brief Reset the data with a specified value.
         /// @param value (default 0). The specified value to be set for all members.
         inline void reset(TData value = static_cast<TData>(0)) {
@@ -253,10 +253,13 @@ namespace celerique {
 
         /// @brief The number of row vectors.
         /// @return `numRows` value.
-        inline ArraySize rows() const { return numRows; }
+        inline static ArraySize rows() { return numRows; }
         /// @brief The number of column vectors.
         /// @return `numCols` value.
-        inline ArraySize columns() const { return numCols; }
+        inline static ArraySize columns() { return numCols; }
+        /// @brief The number of elements this matrix has.
+        /// @return The size value.
+        inline static ArraySize size() { return numRows * numCols; }
         /// @brief Reset the data with a specified value.
         /// @param value (default 0). The specified value to be set for all members.
         inline void reset(TData value = static_cast<TData>(0)) {
