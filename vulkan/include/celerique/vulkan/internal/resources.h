@@ -20,11 +20,16 @@ namespace celerique { namespace vulkan { namespace internal {
     /// @brief The vulkan implementation to interfacing with GPU resources and functionalities.
     class GpuResources : public virtual IGpuResources {
     public:
-        /// @brief Create a buffer of memory in the GPU. This erases the existing data currently on the GPU buffer.
+        /// @brief Create a buffer of memory in the GPU.
         /// @param size The size of the memory to create & allocate.
         /// @param usageFlagBits The usage of the buffer.
+        /// @param shaderStage The shader stage this buffer is going to be read from.
+        /// @param bindingPoint The binding point of this buffer. (Defaults to 0).
         /// @return The unique identifier of the GPU buffer.
-        GpuBufferID createBuffer(size_t size, GpuBufferUsage usageFlagBits) override;
+        GpuBufferID createBuffer(
+            size_t size, GpuBufferUsage usageFlagBits,
+            ShaderStage shaderStage = CELERIQUE_SHADER_STAGE_UNSPECIFIED, size_t bindingPoint = 0
+        ) override;
         /// @brief Copy data from the CPU to the GPU buffer.
         /// @param bufferId The unique identifier of the GPU buffer.
         /// @param ptrDataSrc The pointer to where the data to be copied to the GPU resides.

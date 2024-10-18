@@ -175,9 +175,20 @@ void ::celerique::vulkan::internal::Manager::addGraphicsPipeline(
     colourBlendingInfo.blendConstants[2] = 0.0f;
     colourBlendingInfo.blendConstants[3] = 0.0f;
 
+    /// @brief The descriptor set layouts for this graphics pipeline.
+    ::std::vector<VkDescriptorSetLayout> vecDescriptorSetLayouts = constructVecDescriptorSetLayouts(
+        graphicsPipelineConfig
+    );
+
     /// @brief Graphics Pipeline layout information.
     VkPipelineLayoutCreateInfo graphicsPipelineLayoutInfo = {};
     graphicsPipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+    // Assign only if there are uniform input layout specified in the pipeline configuration.
+    if (!graphicsPipelineConfig.listUnformInputLayouts().empty()) {
+        // Feed to the graphics pipeline layout info.
+        graphicsPipelineLayoutInfo.setLayoutCount = vecDescriptorSetLayouts.size();
+        graphicsPipelineLayoutInfo.pSetLayouts = vecDescriptorSetLayouts.data();
+    }
 
     /// @brief The handle to the graphics pipeline layout.
     VkPipelineLayout graphicsPipelineLayout = nullptr;
@@ -545,10 +556,19 @@ void celerique::vulkan::internal::Manager::reCreateSwapChain(Pointer windowHandl
 }
 
 /// @brief Create a buffer of memory in the GPU.
+/// @param currentId The unique identifier of the GPU buffer.
 /// @param size The size of the memory to create & allocate.
 /// @param usageFlagBits The usage of the buffer.
-/// @param currentId The unique identifier of the GPU buffer.
-void celerique::vulkan::internal::Manager::createBuffer(GpuBufferID currentId, size_t size, GpuBufferUsage usageFlagBits) {
+/// @param shaderStage The shader stage this buffer is going to be read from.
+/// @param bindingPoint The binding point of this buffer. (Defaults to 0).
+void celerique::vulkan::internal::Manager::createBuffer(
+    GpuBufferID currentId, size_t size, GpuBufferUsage usageFlagBits,
+    ShaderStage shaderStage, size_t bindingPoint
+) {
+    ::std::unique_lock<::std::shared_mutex> writeLock(_sharedMutex);
+
+    /// @brief The variable that stores the result of any vulkan function called.
+    VkResult result;
     // TODO: Properly select the logical device to create the buffer. Will settle on the first graphics logical device for now.
 
     /// @brief The logical device to create the buffer.
@@ -590,10 +610,52 @@ void celerique::vulkan::internal::Manager::createBuffer(GpuBufferID currentId, s
         memoryPropertyFlags, &vkBuffer, &deviceMemory
     );
 
+    // Map identifier to resources.
     _mapGpuBufferIdToLogicDev[currentId] = logicalDevice;
     _mapGpuBufferIdToVkBuffer[currentId] = vkBuffer;
     _mapGpuBufferIdToDevMemory[currentId] = deviceMemory;
     _mapGpuBufferIdToSize[currentId] = size;
+    if ((usageFlagBits & CELERIQUE_GPU_BUFFER_USAGE_UNIFORM) != 0) {
+        /// @brief The description of the uniform layout binding.
+        VkDescriptorSetLayoutBinding uniformLayoutBinding = {};
+        uniformLayoutBinding.binding = bindingPoint;
+        uniformLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        uniformLayoutBinding.descriptorCount = 1;
+        if ((shaderStage & CELERIQUE_SHADER_STAGE_VERTEX) != 0) {
+            uniformLayoutBinding.stageFlags |= VK_SHADER_STAGE_VERTEX_BIT;
+        }
+        if ((shaderStage & CELERIQUE_SHADER_STAGE_TESSELLATION_CONTROL) != 0) {
+            uniformLayoutBinding.stageFlags |= VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT;
+        }
+        if ((shaderStage & CELERIQUE_SHADER_STAGE_TESSELLATION_EVALUATION) != 0) {
+            uniformLayoutBinding.stageFlags |= VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT;
+        }
+        if ((shaderStage & CELERIQUE_SHADER_STAGE_GEOMETRY) != 0) {
+            uniformLayoutBinding.stageFlags |= VK_SHADER_STAGE_GEOMETRY_BIT;
+        }
+        if ((shaderStage & CELERIQUE_SHADER_STAGE_FRAGMENT) != 0) {
+            uniformLayoutBinding.stageFlags |= VK_SHADER_STAGE_FRAGMENT_BIT;
+        }
+        if ((shaderStage & CELERIQUE_SHADER_STAGE_COMPUTE) != 0) {
+            uniformLayoutBinding.stageFlags |= VK_SHADER_STAGE_COMPUTE_BIT;
+        }
+
+        /// @brief Information about the descriptor set layout.
+        VkDescriptorSetLayoutCreateInfo descriptorSetLayoutInfo = {};
+        descriptorSetLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+        descriptorSetLayoutInfo.bindingCount = 1;
+        descriptorSetLayoutInfo.pBindings = &uniformLayoutBinding;
+
+        /// @brief The handle to the descriptor set to be created.
+        VkDescriptorSetLayout descriptorSetLayout = nullptr;
+        result = vkCreateDescriptorSetLayout(logicalDevice, &descriptorSetLayoutInfo, nullptr, &descriptorSetLayout);
+        if (result != VK_SUCCESS) {
+            ::std::string errorMessage = "Failed to create descriptor set layout with result " + ::std::to_string(result);
+            celeriqueLogError(errorMessage);
+            throw ::std::runtime_error(errorMessage);
+        }
+        _mapGpuBufferIdToDescSetLayouts[currentId] = descriptorSetLayout;
+    }
 
     celeriqueLogDebug("Created buffer ID " + ::std::to_string(currentId) + " of size " + ::std::to_string(size) + ".");
 }
@@ -605,6 +667,8 @@ void celerique::vulkan::internal::Manager::createBuffer(GpuBufferID currentId, s
 void celerique::vulkan::internal::Manager::copyToBuffer(
     GpuBufferID bufferId, void* ptrDataSrc, size_t dataSize
 ) {
+    ::std::unique_lock<::std::shared_mutex> writeLock(_sharedMutex);
+
     /// @brief The size of the buffer to be filled data with.
     size_t bufferSize = _mapGpuBufferIdToSize[bufferId];
     if (dataSize > bufferSize) {
@@ -662,6 +726,8 @@ void celerique::vulkan::internal::Manager::copyToBuffer(
 /// @brief Free the specified GPU buffer.
 /// @param bufferId The unique identifier of the GPU buffer.
 void celerique::vulkan::internal::Manager::freeBuffer(GpuBufferID bufferId) {
+    ::std::unique_lock<::std::shared_mutex> writeLock(_sharedMutex);
+
     /// @brief The logical device that created the Vulkan buffer handler.
     VkDevice logicalDevice = _mapGpuBufferIdToLogicDev[bufferId];
     /// @brief The vulkan buffer handle.
@@ -692,14 +758,20 @@ void celerique::vulkan::internal::Manager::clearBuffers() {
         VkBuffer vkBuffer = _mapGpuBufferIdToVkBuffer[bufferId];
         /// @brief The vulkan device memory handle.
         VkDeviceMemory deviceMemory = _mapGpuBufferIdToDevMemory[bufferId];
+        /// @brief The descriptor set layout mapped to the GPU buffer identifier.
+        VkDescriptorSetLayout descriptorSetLayout = _mapGpuBufferIdToDescSetLayouts[bufferId];
 
         vkFreeMemory(logicalDevice, deviceMemory, nullptr);
         vkDestroyBuffer(logicalDevice, vkBuffer, nullptr);
+        if (descriptorSetLayout != nullptr) {
+            vkDestroyDescriptorSetLayout(logicalDevice, descriptorSetLayout, nullptr);
+        }
     }
     _mapGpuBufferIdToLogicDev.clear();
     _mapGpuBufferIdToVkBuffer.clear();
     _mapGpuBufferIdToDevMemory.clear();
     _mapGpuBufferIdToSize.clear();
+    _mapGpuBufferIdToDescSetLayouts.clear();
     celeriqueLogTrace("Cleared all memory buffer handlers.");
 }
 
@@ -2438,6 +2510,28 @@ void celerique::vulkan::internal::Manager::fillMeshBuffer(
     }
 
     return vecVertexAttributeDescriptions;
+}
+
+/// @brief Construct a collection of descriptor set layouts for the graphics pipeline.
+/// @param pipelineConfig The pipeline configuration.
+/// @return The collection of descriptor set layouts for the graphics pipeline.
+::std::vector<VkDescriptorSetLayout> celerique::vulkan::internal::Manager::constructVecDescriptorSetLayouts(
+    const PipelineConfig& pipelineConfig
+) {
+    /// @brief The collection of layouts of uniform inputs.
+    const ::std::list<InputLayout>& listUniformInputLayouts = pipelineConfig.listUnformInputLayouts();
+    /// @brief The descriptor set layouts for this graphics pipeline.
+    ::std::vector<VkDescriptorSetLayout> vecDescriptorSetLayouts;
+    vecDescriptorSetLayouts.reserve(listUniformInputLayouts.size());
+
+    // Iterate and collect.
+    for (const InputLayout& uniformInputLayout : listUniformInputLayouts) {
+        /// @brief The descriptor set layout for this particular uniform.
+        VkDescriptorSetLayout descriptorSetLayout = _mapGpuBufferIdToDescSetLayouts[uniformInputLayout.bufferId];
+        vecDescriptorSetLayouts.push_back(descriptorSetLayout);
+    }
+
+    return vecDescriptorSetLayouts;
 }
 
 /// @brief Create a buffer object and allocate memory.

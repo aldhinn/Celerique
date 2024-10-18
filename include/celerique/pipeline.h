@@ -27,26 +27,26 @@ typedef uint8_t CeleriqueShaderSrcLang;
 typedef uint8_t CeleriqueShaderStage;
 /// @brief Null value for `CeleriqueShaderStage` type.
 #define CELERIQUE_SHADER_STAGE_NULL                                                         0x00
-/// @brief In reference to the vertex shader stage.
-#define CELERIQUE_SHADER_STAGE_VERTEX                                                       0x01
-/// @brief In reference to the tessellation control shader stage.
-#define CELERIQUE_SHADER_STAGE_TESSELLATION_CONTROL                                         0x02
-/// @brief In reference to the hull shader stage.
-#define CELERIQUE_SHADER_STAGE_HULL                                                         0x02
-/// @brief In reference to the tessellation evaluation shader stage.
-#define CELERIQUE_SHADER_STAGE_TESSELLATION_EVALUATION                                      0x03
-/// @brief In reference to the domain shader stage.
-#define CELERIQUE_SHADER_STAGE_DOMAIN                                                       0x03
-/// @brief In reference to the geometry shader stage.
-#define CELERIQUE_SHADER_STAGE_GEOMETRY                                                     0x04
-/// @brief In reference to the fragment shader stage.
-#define CELERIQUE_SHADER_STAGE_FRAGMENT                                                     0x05
-/// @brief In reference to the pixel shader stage.
-#define CELERIQUE_SHADER_STAGE_PIXEL                                                        0x05
-/// @brief In reference to the compute shader stage.
-#define CELERIQUE_SHADER_STAGE_COMPUTE                                                      0x06
 /// @brief In reference to an unspecified shader stage.
-#define CELERIQUE_SHADER_STAGE_UNSPECIFIED                                                  0xFF
+#define CELERIQUE_SHADER_STAGE_UNSPECIFIED                                                  0x00
+/// @brief In reference to the vertex shader stage.
+#define CELERIQUE_SHADER_STAGE_VERTEX                                                       CELERIQUE_LEFT_BIT_SHIFT_1(0)
+/// @brief In reference to the tessellation control shader stage.
+#define CELERIQUE_SHADER_STAGE_TESSELLATION_CONTROL                                         CELERIQUE_LEFT_BIT_SHIFT_1(1)
+/// @brief In reference to the hull shader stage.
+#define CELERIQUE_SHADER_STAGE_HULL                                                         CELERIQUE_LEFT_BIT_SHIFT_1(1)
+/// @brief In reference to the tessellation evaluation shader stage.
+#define CELERIQUE_SHADER_STAGE_TESSELLATION_EVALUATION                                      CELERIQUE_LEFT_BIT_SHIFT_1(2)
+/// @brief In reference to the domain shader stage.
+#define CELERIQUE_SHADER_STAGE_DOMAIN                                                       CELERIQUE_LEFT_BIT_SHIFT_1(2)
+/// @brief In reference to the geometry shader stage.
+#define CELERIQUE_SHADER_STAGE_GEOMETRY                                                     CELERIQUE_LEFT_BIT_SHIFT_1(3)
+/// @brief In reference to the fragment shader stage.
+#define CELERIQUE_SHADER_STAGE_FRAGMENT                                                     CELERIQUE_LEFT_BIT_SHIFT_1(4)
+/// @brief In reference to the pixel shader stage.
+#define CELERIQUE_SHADER_STAGE_PIXEL                                                        CELERIQUE_LEFT_BIT_SHIFT_1(4)
+/// @brief In reference to the compute shader stage.
+#define CELERIQUE_SHADER_STAGE_COMPUTE                                                      CELERIQUE_LEFT_BIT_SHIFT_1(5)
 
 /// @brief The type of a particular pipeline input variable.
 typedef uint8_t CeleriquePipelineInputType;
@@ -239,6 +239,8 @@ namespace celerique {
         const char* name = "";
         /// @brief The unique identifier to this input's GPU memory.
         GpuBufferID bufferId = CELERIQUE_GPU_BUFFER_ID_NULL;
+        /// @brief The shader stage this input is going to be read from.
+        ShaderStage shaderStage = CELERIQUE_SHADER_STAGE_UNSPECIFIED;
     };
 
     /// @brief The interface to the GPU resources and functionalities.
@@ -247,8 +249,13 @@ namespace celerique {
         /// @brief Create a buffer of memory in the GPU.
         /// @param size The size of the memory to create & allocate.
         /// @param usageFlagBits The usage of the buffer.
+        /// @param shaderStage The shader stage this buffer is going to be read from.
+        /// @param bindingPoint The binding point of this buffer. (Defaults to 0).
         /// @return The unique identifier of the GPU buffer.
-        virtual GpuBufferID createBuffer(size_t size, GpuBufferUsage usageFlagBits) = 0;
+        virtual GpuBufferID createBuffer(
+            size_t size, GpuBufferUsage usageFlagBits,
+            ShaderStage shaderStage = CELERIQUE_SHADER_STAGE_UNSPECIFIED, size_t bindingPoint = 0
+        ) = 0;
         /// @brief Copy data from the CPU to the GPU buffer. This erases the existing data currently on the GPU buffer.
         /// @param bufferId The unique identifier of the GPU buffer.
         /// @param ptrDataSrc The pointer to where the data to be copied to the GPU resides.

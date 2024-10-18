@@ -14,12 +14,14 @@ License: Mozilla Public License 2.0. (See ./LICENSE).
 /// @brief Create a buffer of memory in the GPU.
 /// @param size The size of the memory to create & allocate.
 /// @param usageFlagBits The usage of the buffer.
+/// @param shaderStage The shader stage this buffer is going to be read from.
+/// @param bindingPoint The binding point of this buffer. (Defaults to 0).
 /// @return The unique identifier of the GPU buffer.
 ::celerique::GpuBufferID celerique::vulkan::internal::GpuResources::createBuffer(
-    size_t size, GpuBufferUsage usageFlagBits
+    size_t size, GpuBufferUsage usageFlagBits, ShaderStage shaderStage, size_t bindingPoint
 ) {
     GpuBufferID currentId = genGpuBufferId();
-    refManager.createBuffer(currentId, size, usageFlagBits);
+    refManager.createBuffer(currentId, size, usageFlagBits, shaderStage, bindingPoint);
     return currentId;
 }
 

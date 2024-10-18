@@ -72,10 +72,15 @@ namespace celerique { namespace vulkan { namespace internal {
         void reCreateSwapChain(Pointer windowHandle);
 
         /// @brief Create a buffer of memory in the GPU.
+        /// @param currentId The unique identifier of the GPU buffer.
         /// @param size The size of the memory to create & allocate.
         /// @param usageFlagBits The usage of the buffer.
-        /// @param currentId The unique identifier of the GPU buffer.
-        void createBuffer(GpuBufferID currentId, size_t size, GpuBufferUsage usageFlagBits);
+        /// @param shaderStage The shader stage this buffer is going to be read from.
+        /// @param bindingPoint The binding point of this buffer. (Defaults to 0).
+        void createBuffer(
+            GpuBufferID currentId, size_t size, GpuBufferUsage usageFlagBits,
+            ShaderStage shaderStage, size_t bindingPoint
+        );
         /// @brief Copy data from the CPU to the GPU buffer.
         /// @param bufferId The unique identifier of the GPU buffer.
         /// @param ptrDataSrc The pointer to where the data to be copied to the GPU resides.
@@ -225,6 +230,12 @@ namespace celerique { namespace vulkan { namespace internal {
         /// @param pipelineConfig The pipeline configuration.
         /// @return The collection of vertex attribute descriptions.
         ::std::vector<VkVertexInputAttributeDescription> constructVecVertexAttributeDescriptions(
+            const PipelineConfig& pipelineConfig
+        );
+        /// @brief Construct a collection of descriptor set layouts for the graphics pipeline.
+        /// @param pipelineConfig The pipeline configuration.
+        /// @return The collection of descriptor set layouts for the graphics pipeline.
+        ::std::vector<VkDescriptorSetLayout> constructVecDescriptorSetLayouts(
             const PipelineConfig& pipelineConfig
         );
 
@@ -451,6 +462,8 @@ namespace celerique { namespace vulkan { namespace internal {
         ::std::unordered_map<GpuBufferID, VkDeviceMemory> _mapGpuBufferIdToDevMemory;
         /// @brief The map of a GPU buffer ID to its memory size.
         ::std::unordered_map<GpuBufferID, size_t> _mapGpuBufferIdToSize;
+        /// @brief The map of a GPU buffer ID to its descriptor set layouts.
+        ::std::unordered_map<GpuBufferID, VkDescriptorSetLayout> _mapGpuBufferIdToDescSetLayouts;
 
     // Validation layer objects.
 #if defined(CELERIQUE_DEBUG_MODE)

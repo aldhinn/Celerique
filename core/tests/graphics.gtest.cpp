@@ -27,7 +27,7 @@ namespace celerique {
         MOCK_METHOD2(addWindow, void(UiProtocol, Pointer));
         MOCK_METHOD1(removeWindow, void(Pointer));
         MOCK_METHOD1(reCreateSwapChain, void(Pointer));
-        MOCK_METHOD2(createBuffer, GpuBufferID(size_t, GpuBufferUsage));
+        MOCK_METHOD4(createBuffer, GpuBufferID(size_t, GpuBufferUsage, ShaderStage, size_t));
         MOCK_METHOD3(copyToBuffer, void(GpuBufferID, void*, size_t));
         MOCK_METHOD1(freeBuffer, void(GpuBufferID));
         MOCK_METHOD0(clearBuffers, void());
