@@ -35,10 +35,9 @@ namespace celerique::testing {
             positionLayout.name = "inPosition";
             positionLayout.location = 0;
             positionLayout.inputType = CELERIQUE_PIPELINE_INPUT_TYPE_FLOAT;
-            positionLayout.numElements = 3;
+            positionLayout.numElements = Vec3::size();
             positionLayout.offset = offsetof(CubeVertex, _position);
-
-            listVertexInputLayouts.emplace_back(positionLayout);
+            listVertexInputLayouts.emplace_back(::std::move(positionLayout));
             celeriqueLogDebug("offsetof(CubeVertex, _position) = " + ::std::to_string(offsetof(CubeVertex, _position)));
 
             /// @brief Layout for normal.
@@ -46,10 +45,9 @@ namespace celerique::testing {
             normalLayout.name = "inNormal";
             normalLayout.location = 1;
             normalLayout.inputType = CELERIQUE_PIPELINE_INPUT_TYPE_FLOAT;
-            normalLayout.numElements = 3;
+            normalLayout.numElements = Vec3::size();
             normalLayout.offset = offsetof(CubeVertex, _normal);
-
-            listVertexInputLayouts.emplace_back(normalLayout);
+            listVertexInputLayouts.emplace_back(::std::move(normalLayout));
             celeriqueLogDebug("offsetof(CubeVertex, _normal) = " + ::std::to_string(offsetof(CubeVertex, _normal)));
 
             return listVertexInputLayouts;
@@ -77,6 +75,52 @@ namespace celerique::testing {
         Vec3 _position;
         /// @brief The normal vector of the surface.
         Vec3 _normal;
+    };
+
+    /// @brief The container for a cube's uniform input variable.
+    class CubeUniform {
+    public:
+        /// @return The pipeline input layout for a `CubeUniform`.
+        ::std::list<InputLayout> listInputLayouts() {
+            /// @brief The collection of layouts of uniform inputs.
+            ::std::list<InputLayout> listUniformInputLayouts;
+
+            /// @brief The layout for light source position matrix.
+            InputLayout lightSourcePosLayout = {};
+            lightSourcePosLayout.name = "inLightSourcePos";
+            lightSourcePosLayout.bindingPoint = 0;
+            lightSourcePosLayout.inputType = CELERIQUE_PIPELINE_INPUT_TYPE_FLOAT;
+            lightSourcePosLayout.numElements = Mat3x3::size();
+            lightSourcePosLayout.offset = offsetof(CubeUniform, _lightSourcePos);
+            lightSourcePosLayout.bufferId = _lightSourceBufferId;
+            lightSourcePosLayout.shaderStage = CELERIQUE_SHADER_STAGE_FRAGMENT;
+            listUniformInputLayouts.emplace_back(::std::move(lightSourcePosLayout));
+
+            return listUniformInputLayouts;
+        }
+
+        /// @brief Update the position of the light source.
+        /// @param newLightSourcePos The 3D coordinate of the new light source position.
+        void updateLightSourcePosition(const Vec3& newLightSourcePos) {
+            _lightSourcePos(0, 0) = newLightSourcePos[0];
+            _lightSourcePos(1, 1) = newLightSourcePos[1];
+            _lightSourcePos(2, 2) = newLightSourcePos[2];
+        }
+
+        /// @brief Updates the value of `_lightSourceBufferId`.
+        /// @param lightSourceBufferId The value to be assigned to `_lightSourceBufferId`.
+        void updateBufferId(GpuBufferID lightSourceBufferId) {
+            _lightSourceBufferId = lightSourceBufferId;
+        }
+
+        /// @brief The matrix that contains the position of the light source in its diagonals.
+        Mat3x3 lightSourcePos() { return _lightSourcePos; }
+
+    private:
+        /// @brief The matrix that contains the position of the light source in its diagonals.
+        Mat3x3 _lightSourcePos;
+        /// @brief The GPU buffer identifier that this uniform updates its values to.
+        GpuBufferID _lightSourceBufferId = CELERIQUE_GPU_BUFFER_ID_NULL;
     };
 
     /// @brief The application layer that facilitates drawing a cube.
@@ -122,12 +166,16 @@ namespace celerique::testing {
                 CELERIQUE_REPO_ROOT_DIR "/vulkan/tests/cube.frag.spv"
             );
 
-            /// @brief The collection of layouts of vertex inputs.
-            ::std::list<InputLayout> listVertexInputLayouts = CubeVertex::listInputLayouts();
-
-            _cubeGraphicsPipelineId = _ptrVulkanApi->addGraphicsPipelineConfig(
-                PipelineConfig(::std::move(mapShaderStageToShaderProgram), ::std::move(listVertexInputLayouts))
+            /// @brief The identifier to the GPU buffer for the uniform.
+            GpuBufferID uniformBufferId = _ptrVulkanApi->createBuffer(
+                Mat3x3::size() * sizeof(float), CELERIQUE_GPU_BUFFER_USAGE_UNIFORM,
+                CELERIQUE_SHADER_STAGE_FRAGMENT, 0
             );
+            _uniform.updateBufferId(uniformBufferId);
+            _cubeGraphicsPipelineId = _ptrVulkanApi->addGraphicsPipelineConfig(
+                PipelineConfig(::std::move(mapShaderStageToShaderProgram),
+                    CubeVertex::listInputLayouts(), _uniform.listInputLayouts()
+            ));
         }
         /// @brief Hard code the vertices of the mesh.
         void loadMesh() {
@@ -179,6 +227,8 @@ namespace celerique::testing {
         ::std::vector<CubeVertex> _vecVertices;
         /// @brief The collection of indices of each vertices to be drawn.
         ::std::vector<uint32_t> _vecIndices;
+        /// @brief The cube uniform.
+        CubeUniform _uniform;
         /// @brief The shared mutex for the entire application layer.
         ::std::shared_mutex _sharedMutex;
     };
@@ -190,13 +240,15 @@ int main(int argc, char** argv) {
 #elif defined(CELERIQUE_FOR_WINDOWS)
     using ::celerique::win32::createWindow;
 #endif
+    /// @brief Alias for the namespace celerique.
+    namespace cq = ::celerique;
 
-    ::std::unique_ptr<::celerique::WindowBase> ptrWindow = createWindow(700, 500, "Cube Application");
-    ptrWindow->useGraphicsApi(::celerique::vulkan::getGraphicsApiInterface());
-    ::celerique::addWindow(::std::move(ptrWindow));
+    ::std::unique_ptr<cq::WindowBase> ptrWindow = createWindow(700, 500, "Cube Application");
+    ptrWindow->useGraphicsApi(cq::vulkan::getGraphicsApiInterface());
+    cq::addWindow(::std::move(ptrWindow));
 
-    ::celerique::addAppLayer(::std::make_unique<::celerique::testing::CubeApp>());
-    ::celerique::run();
+    cq::addAppLayer(::std::make_unique<cq::testing::CubeApp>());
+    cq::run();
 
     return EXIT_SUCCESS;
 }
